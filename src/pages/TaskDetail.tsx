@@ -241,28 +241,34 @@ export function TaskDetail() {
         <CommentList comments={comments} onAdd={addCmt} />
       </Card>
 
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={task.state === 'OPEN' ? 'secondary' : 'primary'}
-          onClick={toggleClose}
-          disabled={acting}
-        >
-          {task.state === 'OPEN' ? (
-            <>
-              <CheckCircle2 className="h-4 w-4" />
-              完了にする
-            </>
-          ) : (
-            <>
-              <RotateCcw className="h-4 w-4" />
-              再開する
-            </>
-          )}
-        </Button>
-        <Button variant="danger" onClick={removeItem} disabled={acting}>
-          <Trash2 className="h-4 w-4" />
-          ボードから外す
-        </Button>
+      <div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={task.state === 'OPEN' ? 'secondary' : 'primary'}
+            onClick={toggleClose}
+            disabled={acting}
+          >
+            {task.state === 'OPEN' ? (
+              <>
+                <CheckCircle2 className="h-4 w-4" />
+                完了にする
+              </>
+            ) : (
+              <>
+                <RotateCcw className="h-4 w-4" />
+                再開する
+              </>
+            )}
+          </Button>
+          <Button variant="danger" onClick={removeItem} disabled={acting}>
+            <Trash2 className="h-4 w-4" />
+            ボードから外す
+          </Button>
+        </div>
+        <p className="mt-2 text-xs leading-relaxed text-sub/80">
+          「完了にする」は Issue をクローズ（履歴は残ります）。「ボードから外す」はボードから取り除くだけで Issue は残ります。
+          <span className="font-semibold text-sub">アプリから Issue の完全削除は行いません</span>（必要なら github.com で削除）。
+        </p>
       </div>
 
       <StatusPickerSheet

@@ -96,6 +96,27 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
         </Button>
       </Card>
 
+      <Card>
+        <CardTitle>使い方・注意</CardTitle>
+        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-sub">
+          <li>
+            操作は<span className="font-semibold text-ink">実際の GitHub に即反映</span>されます（ローカルにコピーは持ちません）。
+          </li>
+          <li>
+            <span className="font-semibold text-ink">削除はありません</span>。「完了にする」＝Issue をクローズ、「ボードから外す」＝ボードから取り除くだけ（Issue は残る）。完全削除は github.com で行います。
+          </li>
+          <li>
+            <span className="font-semibold text-ink">完了したタスクはボードに表示されません</span>。確認は github.com で。
+          </li>
+          <li>
+            他の端末・PC で変更したら、右上の<span className="font-semibold text-ink">更新ボタン</span>か開き直しで同期します（リアルタイム通知ではありません）。
+          </li>
+          <li>
+            操作対象は <span className="font-semibold text-ink">life リポジトリ + Project #1</span> のみです。
+          </li>
+        </ul>
+      </Card>
+
       <a
         href="https://github.com/pandas-mizugorou/life"
         target="_blank"

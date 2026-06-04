@@ -18,6 +18,28 @@
 - **Worker**: GitHub Classic PAT（`repo` + `project`）を Secret 保管。`owner/repo/project` をハードコードし、`pandas-mizugorou/life` と Project #1 以外を操作できないようガード。合言葉が漏れても被害はこの 1 リポジトリに限定される。
 - Projects v2 はユーザー所有のため **Classic PAT が必須**（Fine-grained PAT では操作不可）。「削除」は GitHub 仕様上 Issue を物理削除できないため「クローズ」になる。
 
+## 使い方・操作の注意
+
+このアプリは GitHub のコピーを持たず、**実際の Issues / Project #1 ボードを直接操作**する（裏で GitHub API を呼ぶ）。操作はすべて本物に即反映される。
+
+| アプリの操作 | GitHub 側で起きること |
+|---|---|
+| タスク追加 | `life` に新しい Issue を作成 → ボードに追加 → Status 設定（ラベルは Issue に付与） |
+| ステータス変更 | Project #1 の Status 列を移動（Issue の open/closed とは別物） |
+| コメント / 編集 | その Issue にコメント追加 / タイトル・本文を更新 |
+| 完了にする | Issue を Close（ボードからは消える＝未完了のみ表示のため） |
+| 再開する | Issue を再 Open |
+
+### 「削除」について（重要）
+GitHub には Issue を完全削除する API が無いため、アプリの「削除」相当は次の2つ：
+- **完了にする** … Issue を Close（履歴は GitHub に残る）
+- **ボードから外す** … ボードから取り除くだけで **Issue 自体はリポジトリに残る**（誤操作に強い安全側の挙動）
+
+物理削除したいときだけ github.com 側で Issue を削除する。基本は Close 運用で十分。
+
+### 同期について
+github.com 側（PC 等）で変更した場合、アプリを**開き直す / 前面に戻す / 右上の更新ボタン**で最新を読み直す（リアルタイム通知ではない）。常に GitHub が唯一の正。
+
 ## セットアップ
 
 ### 0. 依存インストール & アイコン生成
