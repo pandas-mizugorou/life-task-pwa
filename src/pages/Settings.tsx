@@ -3,8 +3,10 @@ import { ExternalLink, Link2, Lock, ShieldCheck } from 'lucide-react'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Input, Label } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
+import { Switch } from '../components/ui/Switch'
 import { useToast } from '../components/ui/Toast'
 import { useAuth } from '../context/AuthContext'
+import { useBoard } from '../context/BoardContext'
 
 export function Settings({ firstRun = false }: { firstRun?: boolean }) {
   const { workerUrl, saveWorkerUrl, signOut } = useAuth()
@@ -54,6 +56,8 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
   return (
     <div className="space-y-4">
       <h1 className="text-lg font-black text-ink">設定</h1>
+
+      <ShowClosedToggle />
 
       <Card>
         <CardTitle>
@@ -106,7 +110,7 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
             <span className="font-semibold text-ink">削除はありません</span>。「完了にする」＝Issue をクローズ、「ボードから外す」＝ボードから取り除くだけ（Issue は残る）。完全削除は github.com で行います。
           </li>
           <li>
-            <span className="font-semibold text-ink">完了したタスクはボードに表示されません</span>。確認は github.com で。
+            完了したタスクは既定で非表示です。上の<span className="font-semibold text-ink">「完了したタスクも表示」</span>を ON にすると Done 列に出ます。
           </li>
           <li>
             他の端末・PC で変更したら、右上の<span className="font-semibold text-ink">更新ボタン</span>か開き直しで同期します（リアルタイム通知ではありません）。
@@ -128,5 +132,26 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
       </a>
       <p className="pt-1 text-center text-xs text-sub">Lifeタスク · GitHub Issues + Projects</p>
     </div>
+  )
+}
+
+function ShowClosedToggle() {
+  const board = useBoard()
+  return (
+    <Card>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-ink">完了したタスクも表示</div>
+          <div className="mt-0.5 text-xs leading-relaxed text-sub">
+            ON にすると、クローズ済みのタスクが「Done」列に表示されます（件数が多い場合があります）。
+          </div>
+        </div>
+        <Switch
+          checked={board.showClosed}
+          onCheckedChange={board.setShowClosed}
+          aria-label="完了したタスクも表示"
+        />
+      </div>
+    </Card>
   )
 }

@@ -44,7 +44,13 @@ export function Board() {
       ) : (
         <div className="divide-y divide-line/40">
           {STATUS_ORDER.map((s) => (
-            <StatusColumn key={s} status={s} tasks={board.byStatus[s]} onStatusTap={setPicker} />
+            <StatusColumn
+              key={s}
+              status={s}
+              tasks={board.byStatus[s]}
+              onStatusTap={setPicker}
+              defaultOpen={s !== 'Done'}
+            />
           ))}
         </div>
       )}

@@ -103,13 +103,8 @@ export function TaskDetail() {
     try {
       const { task: updated } = await api.patchTask(number, { state: closing ? 'closed' : 'open' })
       setTask(updated)
-      if (closing) {
-        board.removeTaskLocal(number)
-        toast({ variant: 'success', title: '完了にしました' })
-      } else {
-        board.updateTaskLocal(updated)
-        toast({ variant: 'success', title: '再開しました' })
-      }
+      board.updateTaskLocal(updated) // keep in cache; the board hides/shows it per the 完了表示 toggle
+      toast({ variant: 'success', title: closing ? '完了にしました' : '再開しました' })
     } catch (e) {
       toast({ variant: 'error', title: '失敗しました', description: errMsg(e) })
     } finally {

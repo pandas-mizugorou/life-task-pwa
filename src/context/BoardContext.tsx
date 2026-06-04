@@ -13,6 +13,8 @@ interface BoardValue {
   total: number
   labelFilter: string | null
   setLabelFilter: (v: string | null) => void
+  showClosed: boolean
+  setShowClosed: (v: boolean) => void
   refresh: () => Promise<void>
   setStatus: (number: number, to: Status) => Promise<void>
   addTask: (input: NewTask) => Promise<Task>
@@ -37,6 +39,13 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
   const [labelFilter, setLabelFilter] = useState<string | null>(null)
+  const [showClosed, setShowClosedState] = useState<boolean>(
+    () => localStorage.getItem('ltp-show-closed') === '1',
+  )
+  const setShowClosed = useCallback((v: boolean) => {
+    localStorage.setItem('ltp-show-closed', v ? '1' : '0')
+    setShowClosedState(v)
+  }, [])
 
   // Keep a live ref so optimistic handlers can snapshot/rollback reliably.
   const tasksRef = useRef(tasks)
@@ -47,14 +56,14 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setError(null)
     try {
-      const { tasks } = await api.getBoard()
+      const { tasks } = await api.getBoard(showClosed)
       setTasks(tasks)
     } catch (e) {
       setError(errMsg(e))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [showClosed])
 
   useEffect(() => {
     refresh()
@@ -112,20 +121,14 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
       Task[]
     >
     for (const t of tasks) {
-      if (t.state === 'CLOSED') continue // the board shows active work only
+      if (!showClosed && t.state === 'CLOSED') continue // board shows active work by default
       if (labelFilter && !t.labels.some((l) => l.name === labelFilter)) continue
       groups[t.status].push(t)
     }
     return groups
-  }, [tasks, labelFilter])
+  }, [tasks, labelFilter, showClosed])
 
-  const total = useMemo(
-    () =>
-      tasks.filter(
-        (t) => t.state === 'OPEN' && (!labelFilter || t.labels.some((l) => l.name === labelFilter)),
-      ).length,
-    [tasks, labelFilter],
-  )
+  const total = useMemo(() => Object.values(byStatus).reduce((n, a) => n + a.length, 0), [byStatus])
 
   return (
     <Ctx.Provider
@@ -137,6 +140,8 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         total,
         labelFilter,
         setLabelFilter,
+        showClosed,
+        setShowClosed,
         refresh,
         setStatus,
         addTask,

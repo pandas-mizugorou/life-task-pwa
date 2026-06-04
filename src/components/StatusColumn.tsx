@@ -9,12 +9,14 @@ export function StatusColumn({
   status,
   tasks,
   onStatusTap,
+  defaultOpen = true,
 }: {
   status: Status
   tasks: Task[]
   onStatusTap: (t: Task) => void
+  defaultOpen?: boolean
 }) {
-  const [open, setOpen] = useState(true)
+  const [open, setOpen] = useState(defaultOpen)
   const meta = STATUS_META[status]
 
   return (
