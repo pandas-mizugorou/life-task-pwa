@@ -1,0 +1,70 @@
+import { useState } from 'react'
+import { Send } from 'lucide-react'
+import { Textarea } from './ui/Input'
+import { Button } from './ui/Button'
+import { Spinner } from './ui/Spinner'
+import type { Comment } from '../lib/types'
+
+export function CommentList({
+  comments,
+  onAdd,
+}: {
+  comments: Comment[]
+  onAdd: (body: string) => Promise<void>
+}) {
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async () => {
+    if (!text.trim() || busy) return
+    setBusy(true)
+    try {
+      await onAdd(text.trim())
+      setText('')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <div className="space-y-3">
+        {comments.length === 0 && <p className="text-sm text-sub">コメントはまだありません。</p>}
+        {comments.map((c) => (
+          <div key={c.id} className="rounded-xl border border-line bg-panel2/60 p-3">
+            <div className="mb-1 flex items-center gap-2 text-xs text-sub">
+              <span className="font-semibold text-ink/80">{c.author}</span>
+              <span>{fmtDate(c.createdAt)}</span>
+            </div>
+            <div className="whitespace-pre-wrap break-words text-sm text-ink/90">{c.body}</div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3">
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="コメントを書く…"
+        />
+        <div className="mt-2 flex justify-end">
+          <Button onClick={submit} disabled={busy || !text.trim()} size="sm">
+            {busy ? (
+              <Spinner className="h-4 w-4" />
+            ) : (
+              <>
+                <Send className="h-4 w-4" /> コメント
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function fmtDate(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`
+}

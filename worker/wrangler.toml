@@ -1,0 +1,15 @@
+# Cloudflare Worker — the GitHub API proxy. Holds the GitHub PAT as a secret so it
+# never reaches the phone, and restricts every call to pandas-mizugorou/life + Project #1.
+#
+# Deploy:  npm run deploy:worker   (or: wrangler deploy --config worker/wrangler.toml)
+# Secrets: wrangler secret put GITHUB_PAT     --config worker/wrangler.toml
+#          wrangler secret put APP_PASSPHRASE --config worker/wrangler.toml
+name = "life-task-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+[vars]
+# Comma-separated allowlist of PWA origins for CORS. "*" allows any origin
+# (the X-App-Key passphrase is the real gate). Tighten to your Pages URL after
+# the first deploy, e.g. "https://life-task-pwa.pages.dev".
+ALLOWED_ORIGIN = "https://life-task-pwa.pages.dev"

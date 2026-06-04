@@ -1,0 +1,9 @@
+# Local Worker dev secrets. Copy to `worker/.dev.vars` (gitignored) and fill in.
+# `wrangler dev` loads this automatically. In production these are set via
+# `wrangler secret put ...` instead.
+
+# A GitHub Classic PAT with scopes: repo, project  (user-owned Projects v2 need a Classic PAT)
+GITHUB_PAT=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# A long random passphrase the PWA must send as X-App-Key on every request.
+APP_PASSPHRASE=choose-a-long-random-passphrase

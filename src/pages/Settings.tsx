@@ -1,0 +1,111 @@
+import { useState } from 'react'
+import { ExternalLink, Link2, Lock, ShieldCheck } from 'lucide-react'
+import { Card, CardTitle } from '../components/ui/Card'
+import { Input, Label } from '../components/ui/Input'
+import { Button } from '../components/ui/Button'
+import { useToast } from '../components/ui/Toast'
+import { useAuth } from '../context/AuthContext'
+
+export function Settings({ firstRun = false }: { firstRun?: boolean }) {
+  const { workerUrl, saveWorkerUrl, signOut } = useAuth()
+  const toast = useToast()
+  const [url, setUrl] = useState(workerUrl)
+
+  const save = () => {
+    if (!url.trim()) return
+    saveWorkerUrl(url)
+    toast({ variant: 'success', title: '接続先を保存しました' })
+  }
+
+  if (firstRun) {
+    return (
+      <div className="mx-auto flex min-h-[100dvh] max-w-md items-center px-4">
+        <div className="w-full">
+          <div className="mb-6 text-center">
+            <span className="mx-auto mb-3 grid h-16 w-16 place-items-center rounded-2xl bg-grad text-heroink shadow-lg">
+              <Link2 className="h-8 w-8" />
+            </span>
+            <h1 className="text-2xl font-black text-ink">初期設定</h1>
+            <p className="mt-1.5 text-sm text-sub">デプロイした Worker の URL を入力してください</p>
+          </div>
+          <Card>
+            <Label htmlFor="wu">Worker URL</Label>
+            <Input
+              id="wu"
+              inputMode="url"
+              autoCapitalize="off"
+              autoCorrect="off"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://life-task-api.xxx.workers.dev"
+            />
+            <Button className="mt-4 w-full" onClick={save} disabled={!url.trim()}>
+              保存して続ける
+            </Button>
+            <p className="mt-3 text-xs leading-relaxed text-sub">
+              GitHub トークンはこの端末には保存されません。Worker 側の Secret に保管されます。
+            </p>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <h1 className="text-lg font-black text-ink">設定</h1>
+
+      <Card>
+        <CardTitle>
+          <span className="inline-flex items-center gap-2">
+            <Link2 className="h-4 w-4 text-accent" />
+            接続先 Worker
+          </span>
+        </CardTitle>
+        <Label htmlFor="wu">Worker URL</Label>
+        <div className="flex gap-2">
+          <Input
+            id="wu"
+            inputMode="url"
+            autoCapitalize="off"
+            autoCorrect="off"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://life-task-api.xxx.workers.dev"
+          />
+          <Button onClick={save} disabled={!url.trim()}>
+            保存
+          </Button>
+        </div>
+      </Card>
+
+      <Card>
+        <CardTitle>
+          <span className="inline-flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-accent2" />
+            セキュリティ
+          </span>
+        </CardTitle>
+        <p className="text-sm leading-relaxed text-sub">
+          GitHub の Personal Access Token は Cloudflare Worker の Secret にのみ保管され、この端末・ブラウザには保存されません。操作は{' '}
+          <b className="text-ink">pandas-mizugorou/life</b> リポジトリと Project #1 に限定されています。
+        </p>
+        <Button variant="danger" className="mt-3" onClick={signOut}>
+          <Lock className="h-4 w-4" />
+          ロックする（合言葉を再入力）
+        </Button>
+      </Card>
+
+      <a
+        href="https://github.com/pandas-mizugorou/life"
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center justify-center gap-2 text-sm text-sub transition hover:text-ink"
+      >
+        <ExternalLink className="h-4 w-4" />
+        GitHub でリポジトリを開く
+      </a>
+      <p className="pt-1 text-center text-xs text-sub">Lifeタスク · GitHub Issues + Projects</p>
+    </div>
+  )
+}

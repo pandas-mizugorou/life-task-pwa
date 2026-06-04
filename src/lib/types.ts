@@ -1,0 +1,50 @@
+// Mirrors worker/src/types.ts. Keep both in sync.
+
+export type Status = 'Backlog' | 'Todo' | 'In Progress' | 'Pending' | 'Done'
+
+export interface Label {
+  name: string
+  /** 6-digit hex, no leading '#'. */
+  color: string
+}
+
+export interface Task {
+  number: number
+  /** ProjectV2Item id — required for status/remove. '' only when not on the board. */
+  itemId: string
+  title: string
+  body: string
+  state: 'OPEN' | 'CLOSED'
+  status: Status
+  labels: Label[]
+  url: string
+  updatedAt: string
+  commentCount: number
+}
+
+export interface Comment {
+  id: string
+  author: string
+  body: string
+  createdAt: string
+}
+
+export interface NewTask {
+  title: string
+  status: Status
+  label?: string
+  body?: string
+}
+
+export interface TaskPatch {
+  title?: string
+  body?: string
+  state?: 'open' | 'closed'
+}
+
+export interface Meta {
+  projectId: string
+  statusFieldId: string
+  statuses: { name: string; optionId: string }[]
+  labels: Label[]
+}
