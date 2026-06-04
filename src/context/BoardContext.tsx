@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useToast } from '../components/ui/Toast'
 import * as api from '../lib/api'
 import { errMsg, haptic } from '../lib/haptics'
-import { STATUS_ORDER } from '../lib/status'
+import { ACTIVE_STATUSES, STATUS_ORDER } from '../lib/status'
 import type { Label, NewTask, Status, Task } from '../lib/types'
 
 interface BoardValue {
@@ -28,6 +28,10 @@ interface BoardValue {
   renameLabel: (name: string, patch: { newName?: string; color?: string }) => Promise<void>
   deleteLabel: (name: string) => Promise<void>
   setTaskLabels: (number: number, labels: string[]) => Promise<Task>
+  /** Closed (completed) tasks, for the 完了済み archive column (populated when showClosed). */
+  completed: Task[]
+  /** Close (= complete) or reopen a task. */
+  setTaskState: (number: number, state: 'open' | 'closed') => Promise<Task>
 }
 
 const Ctx = createContext<BoardValue | null>(null)
@@ -124,6 +128,32 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     [toast, labels],
   )
 
+  const setTaskState = useCallback(
+    async (number: number, state: 'open' | 'closed') => {
+      const prev = tasksRef.current
+      setTasks((ts) =>
+        ts.map((t) =>
+          t.number === number ? { ...t, state: state === 'closed' ? 'CLOSED' : 'OPEN' } : t,
+        ),
+      )
+      haptic(12)
+      try {
+        const { task } = await api.patchTask(number, { state })
+        setTasks((ts) => ts.map((t) => (t.number === number ? task : t)))
+        return task
+      } catch (e) {
+        setTasks(prev) // rollback
+        toast({
+          variant: 'error',
+          title: state === 'closed' ? '完了に失敗' : '戻すのに失敗',
+          description: errMsg(e),
+        })
+        throw e
+      }
+    },
+    [toast],
+  )
+
   const addTask = useCallback(async (input: NewTask) => {
     const { task } = await api.addTask(input)
     setTasks((ts) => [task, ...ts])
@@ -186,14 +216,23 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
       Task[]
     >
     for (const t of tasks) {
-      if (!showClosed && t.state === 'CLOSED') continue // board shows active work by default
+      if (t.state === 'CLOSED') continue // closed = completed → shown in 完了済み column, not here
       if (labelFilter && !t.labels.some((l) => l.name === labelFilter)) continue
-      groups[t.status].push(t)
+      const col: Status = ACTIVE_STATUSES.includes(t.status) ? t.status : 'Todo' // open+Done/unknown → Todo
+      groups[col].push(t)
     }
     return groups
-  }, [tasks, labelFilter, showClosed])
+  }, [tasks, labelFilter])
 
   const total = useMemo(() => Object.values(byStatus).reduce((n, a) => n + a.length, 0), [byStatus])
+
+  const completed = useMemo(
+    () =>
+      tasks.filter(
+        (t) => t.state === 'CLOSED' && (!labelFilter || t.labels.some((l) => l.name === labelFilter)),
+      ),
+    [tasks, labelFilter],
+  )
 
   return (
     <Ctx.Provider
@@ -218,6 +257,8 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         renameLabel,
         deleteLabel,
         setTaskLabels,
+        completed,
+        setTaskState,
       }}
     >
       {children}

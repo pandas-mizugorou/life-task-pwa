@@ -15,13 +15,14 @@ import { FullSpinner } from '../components/ui/Spinner'
 import { ErrorState } from '../components/ui/States'
 import { LabelFilterChips } from '../components/LabelFilterChips'
 import { StatusColumn } from '../components/StatusColumn'
+import { CompletedColumn } from '../components/CompletedColumn'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { QuickAddSheet } from '../components/QuickAddSheet'
 import { LabelQuickSheet } from '../components/LabelQuickSheet'
 import { TaskCardView } from '../components/TaskCardView'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
-import { STATUS_ORDER } from '../lib/status'
+import { ACTIVE_STATUSES } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 
 export function Board() {
@@ -49,6 +50,13 @@ export function Board() {
     await board.setStatus(number, s)
   }
 
+  const complete = async () => {
+    if (!picker) return
+    const number = picker.number
+    setPicker(null)
+    await board.setTaskState(number, 'closed')
+  }
+
   const onDragStart = (e: DragStartEvent) => {
     const t = e.active.data.current?.task as Task | undefined
     if (t) {
@@ -61,7 +69,7 @@ export function Board() {
     setActiveTask(null)
     const t = e.active.data.current?.task as Task | undefined
     const to = e.over?.id as Status | undefined
-    if (t && to && (STATUS_ORDER as string[]).includes(to) && t.status !== to) {
+    if (t && to && (ACTIVE_STATUSES as string[]).includes(to) && t.status !== to) {
       board.setStatus(t.number, to) // optimistic move (with rollback on failure)
     }
   }
@@ -91,7 +99,7 @@ export function Board() {
             !activeTask && 'snap-x snap-proximity',
           )}
         >
-          {STATUS_ORDER.map((s) => (
+          {ACTIVE_STATUSES.map((s) => (
             <StatusColumn
               key={s}
               status={s}
@@ -101,6 +109,7 @@ export function Board() {
               onAdd={setAddStatus}
             />
           ))}
+          {board.showClosed && <CompletedColumn tasks={board.completed} />}
         </div>
 
         <DragOverlay dropAnimation={null}>
@@ -110,7 +119,12 @@ export function Board() {
         </DragOverlay>
       </DndContext>
 
-      <StatusPickerSheet task={picker} onClose={() => setPicker(null)} onPick={pick} />
+      <StatusPickerSheet
+        task={picker}
+        onClose={() => setPicker(null)}
+        onPick={pick}
+        onComplete={complete}
+      />
       <LabelQuickSheet task={labelTarget} onClose={() => setLabelTarget(null)} />
       <QuickAddSheet
         open={addStatus !== null}

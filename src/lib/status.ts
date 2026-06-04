@@ -1,7 +1,14 @@
 import type { Status } from './types'
 
-/** Display + mutation order of the board's Status single-select. */
+/** All Status values that exist on the board's single-select (incl. legacy Done). */
 export const STATUS_ORDER: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pending', 'Done']
+
+/**
+ * Columns shown on the board (for dragging / adding). "Done" is intentionally
+ * excluded: completing a task = closing the issue (see 完了にする), not a status.
+ * Closed tasks appear in a separate 完了済み (archive) column.
+ */
+export const ACTIVE_STATUSES: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pending']
 
 /** Visual treatment per status (dot color + soft tint for active pills). */
 export const STATUS_META: Record<Status, { label: string; dot: string; tint: string }> = {

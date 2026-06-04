@@ -113,7 +113,7 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
             <span className="font-semibold text-ink">完了にする</span>＝やり終えたとき（完了として記録、ボードから消える）。<span className="font-semibold text-ink">ボードから外す</span>＝やらないことにしたとき（完了にせず消す、タスクは残る）。どちらも GitHub に残り、完全削除は github.com で。
           </li>
           <li>
-            完了したタスクは既定で非表示です。上の<span className="font-semibold text-ink">「完了したタスクも表示」</span>を ON にすると Done 列に出ます。
+            完了したタスクは既定で非表示です。上の<span className="font-semibold text-ink">「完了したタスクも表示」</span>を ON にすると末尾の「完了済み」列に出ます。
           </li>
           <li>
             他の端末・PC で変更したら、右上の<span className="font-semibold text-ink">更新ボタン</span>か開き直しで同期します（リアルタイム通知ではありません）。
@@ -146,7 +146,7 @@ function ShowClosedToggle() {
         <div className="min-w-0">
           <div className="text-sm font-semibold text-ink">完了したタスクも表示</div>
           <div className="mt-0.5 text-xs leading-relaxed text-sub">
-            ON にすると、クローズ済みのタスクが「Done」列に表示されます（件数が多い場合があります）。
+            ON にすると、完了（クローズ）したタスクが末尾の「完了済み」列に表示されます（件数が多い場合があります）。
           </div>
         </div>
         <Switch
