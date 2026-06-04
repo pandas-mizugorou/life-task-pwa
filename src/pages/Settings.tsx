@@ -105,21 +105,27 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
 
       <Card>
         <CardTitle>使い方・注意</CardTitle>
-        <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed text-sub">
+        <ul className="list-disc space-y-2 pl-5 text-sm leading-relaxed text-sub">
           <li>
-            操作は<span className="font-semibold text-ink">実際の GitHub に即反映</span>されます（ローカルにコピーは持ちません）。
+            このアプリの操作は、すべて<span className="font-semibold text-ink">本物の GitHub にすぐ反映</span>されます（アプリの中にコピーは持ちません）。
           </li>
           <li>
-            <span className="font-semibold text-ink">完了にする</span>＝やり終えたとき（完了として記録、ボードから消える）。<span className="font-semibold text-ink">ボードから外す</span>＝やらないことにしたとき（完了にせず消す、タスクは残る）。どちらも GitHub に残り、完全削除は github.com で。
+            <span className="font-semibold text-ink">「完了にする」</span>＝やり終えたとき。クローズして記録に残り、ボードから消えます（あとで見返せます）。
           </li>
           <li>
-            完了したタスクは既定で非表示です。上の<span className="font-semibold text-ink">「完了したタスクも表示」</span>を ON にすると末尾の「完了済み」列に出ます。
+            <span className="font-semibold text-ink">「ボードから外す」</span>＝「やらない」と決めたとき。完了にはせず、ボードから消すだけです（タスク自体は GitHub に残ります）。
           </li>
           <li>
-            他の端末・PC で変更したら、右上の<span className="font-semibold text-ink">更新ボタン</span>か開き直しで同期します（リアルタイム通知ではありません）。
+            タスクを<span className="font-semibold text-ink">完全に削除する機能はありません</span>（GitHub の仕様）。どうしても消したいときは github.com で削除してください。
           </li>
           <li>
-            操作対象は <span className="font-semibold text-ink">life リポジトリ + Project #1</span> のみです。
+            完了したタスクはふだん表示されません。見たいときは、上の<span className="font-semibold text-ink">「完了したタスクも表示」</span>を ON にすると、右端の「完了済み」列に出ます。
+          </li>
+          <li>
+            PC など別の場所で変更したときは、<span className="font-semibold text-ink">右上の更新ボタン</span>を押すか、アプリを開き直すと最新になります（自動では即時に反映されません）。
+          </li>
+          <li>
+            このアプリが操作するのは <span className="font-semibold text-ink">life リポジトリの Project #1 だけ</span>です。
           </li>
         </ul>
       </Card>
