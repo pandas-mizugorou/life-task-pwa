@@ -137,7 +137,7 @@ export function TaskDetail() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="mx-auto h-full max-w-2xl space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-28 pt-4">
       <div className="flex items-center gap-2">
         <button
           onClick={() => navigate(-1)}

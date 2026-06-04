@@ -38,9 +38,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
-        <div className="mx-auto max-w-2xl px-4 pb-28 pt-4">{children}</div>
-      </main>
+      {/* No scroll here — each page manages its own (Board = full-height kanban). */}
+      <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
 
       <nav
         className="z-40 border-t border-line bg-panel/90 backdrop-blur-xl"

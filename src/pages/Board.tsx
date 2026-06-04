@@ -27,30 +27,28 @@ export function Board() {
   }
 
   return (
-    <div>
-      <div className="sticky top-0 z-10 -mx-4 mb-1 bg-bg/85 px-4 pb-2 pt-1 backdrop-blur-md">
+    <div className="flex h-full flex-col">
+      <div className="shrink-0 px-4 pt-4">
         <LabelFilterChips value={board.labelFilter} onChange={board.setLabelFilter} />
       </div>
 
       {board.total === 0 ? (
-        <EmptyState
-          title="タスクがありません"
-          description={
-            board.labelFilter
-              ? 'このラベルの未完了タスクはありません。'
-              : '右下の＋ボタンから追加できます。'
-          }
-        />
+        <div className="flex min-h-0 flex-1 items-center justify-center">
+          <EmptyState
+            title="タスクがありません"
+            description={
+              board.labelFilter
+                ? 'このラベルの未完了タスクはありません。'
+                : '右下の＋ボタンから追加できます。'
+            }
+          />
+        </div>
       ) : (
-        <div className="divide-y divide-line/40">
+        // Horizontal kanban: columns side by side, swipe to scroll (snap per column);
+        // each column scrolls vertically on its own.
+        <div className="flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3">
           {STATUS_ORDER.map((s) => (
-            <StatusColumn
-              key={s}
-              status={s}
-              tasks={board.byStatus[s]}
-              onStatusTap={setPicker}
-              defaultOpen={s !== 'Done'}
-            />
+            <StatusColumn key={s} status={s} tasks={board.byStatus[s]} onStatusTap={setPicker} />
           ))}
         </div>
       )}
