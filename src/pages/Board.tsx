@@ -5,9 +5,12 @@ import {
   MouseSensor,
   TouchSensor,
   closestCorners,
+  pointerWithin,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { arrayMove } from '@dnd-kit/sortable'
@@ -26,12 +29,20 @@ import { haptic } from '../lib/haptics'
 import { ACTIVE_STATUSES } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 
+// Prefer what's directly under the finger (precise); fall back to the nearest
+// droppable when the pointer is in a gap, so there are no dead zones.
+const collisionDetectionStrategy: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args)
+  return pointer.length > 0 ? pointer : closestCorners(args)
+}
+
 export function Board() {
   const board = useBoard()
   const [picker, setPicker] = useState<Task | null>(null)
   const [addStatus, setAddStatus] = useState<Status | null>(null)
   const [labelTarget, setLabelTarget] = useState<Task | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
+  const [overColumn, setOverColumn] = useState<Status | null>(null)
 
   // Long-press to drag on touch (so quick swipes still scroll the board/columns);
   // small move threshold to start a drag with a mouse on desktop.
@@ -66,8 +77,25 @@ export function Board() {
     }
   }
 
+  // Track which column the card is hovering over, so we can highlight it even
+  // when the pointer is over another card (not just the empty column area).
+  const onDragOver = (e: DragOverEvent) => {
+    const overId = e.over ? String(e.over.id) : null
+    let col: Status | null = null
+    if (overId) {
+      if ((ACTIVE_STATUSES as string[]).includes(overId)) {
+        col = overId as Status
+      } else {
+        const t = board.tasks.find((x) => `task-${x.number}` === overId)
+        col = t ? t.status : null
+      }
+    }
+    setOverColumn((prev) => (prev === col ? prev : col))
+  }
+
   const onDragEnd = (e: DragEndEvent) => {
     setActiveTask(null)
+    setOverColumn(null)
     const activeId = String(e.active.id)
     const overId = e.over ? String(e.over.id) : null
     if (!overId || overId === activeId) return
@@ -129,10 +157,14 @@ export function Board() {
           still scroll. Snap is disabled while dragging so auto-scroll stays smooth. */}
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={collisionDetectionStrategy}
         onDragStart={onDragStart}
+        onDragOver={onDragOver}
         onDragEnd={onDragEnd}
-        onDragCancel={() => setActiveTask(null)}
+        onDragCancel={() => {
+          setActiveTask(null)
+          setOverColumn(null)
+        }}
       >
         <div
           className={cn(
@@ -145,6 +177,7 @@ export function Board() {
               key={s}
               status={s}
               tasks={board.byStatus[s]}
+              isTarget={overColumn === s}
               onStatusTap={setPicker}
               onLabelTap={setLabelTarget}
               onAdd={setAddStatus}

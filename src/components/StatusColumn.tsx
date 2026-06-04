@@ -10,24 +10,32 @@ import { TaskCard } from './TaskCard'
 export function StatusColumn({
   status,
   tasks,
+  isTarget,
   onStatusTap,
   onLabelTap,
   onAdd,
 }: {
   status: Status
   tasks: Task[]
+  /** True while a dragged card is hovering over this column (highlight target). */
+  isTarget?: boolean
   onStatusTap: (t: Task) => void
   onLabelTap: (t: Task) => void
   onAdd: (status: Status) => void
 }) {
   const meta = STATUS_META[status]
   const { setNodeRef, isOver } = useDroppable({ id: status })
+  const highlight = isOver || isTarget
 
   return (
     <section className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col">
       <div className="mb-2 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.dot }} aria-hidden />
-        <span className="text-sm font-bold text-ink">{meta.label}</span>
+        <span
+          className={cn('text-sm font-bold transition-colors', highlight ? 'text-accent2' : 'text-ink')}
+        >
+          {meta.label}
+        </span>
         <span className="rounded-full bg-panel2 px-1.5 py-0.5 text-[11px] font-semibold text-sub">
           {tasks.length}
         </span>
@@ -43,7 +51,7 @@ export function StatusColumn({
         ref={setNodeRef}
         className={cn(
           'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl border-2 border-transparent bg-panel2/30 p-2 pb-4 transition-colors',
-          isOver && 'border-accent2/50 bg-accent2/10',
+          highlight && 'border-accent2 bg-accent2/15',
         )}
       >
         <SortableContext
