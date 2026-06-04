@@ -64,7 +64,7 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
     return { task: await github.createTask(env, b) }
   }
 
-  const mm = p.match(/^\/api\/tasks\/(\d+)(\/status|\/comments|\/item|\/labels)?$/)
+  const mm = p.match(/^\/api\/tasks\/(\d+)(\/status|\/comments|\/item|\/labels|\/position)?$/)
   if (mm) {
     const number = parseInt(mm[1], 10)
     const sub = mm[2]
@@ -76,6 +76,11 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
     if (sub === '/labels' && m === 'PUT') {
       const b = (await request.json()) as any
       return { task: await github.setTaskLabels(env, number, b?.labels) }
+    }
+    if (sub === '/position' && m === 'PATCH') {
+      const b = (await request.json()) as any
+      await github.reorderTask(env, b?.itemId, b?.afterItemId)
+      return { ok: true }
     }
     if (sub === '/status' && m === 'PATCH') {
       const b = (await request.json()) as any

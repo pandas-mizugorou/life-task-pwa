@@ -1,4 +1,5 @@
 import { useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { STATUS_META } from '../lib/status'
@@ -45,13 +46,18 @@ export function StatusColumn({
           isOver && 'border-accent2/50 bg-accent2/10',
         )}
       >
-        {tasks.length ? (
-          tasks.map((t) => (
-            <TaskCard key={t.number} task={t} onStatusTap={onStatusTap} onLabelTap={onLabelTap} />
-          ))
-        ) : (
-          <p className="px-1 pt-1.5 text-xs text-sub/50">なし</p>
-        )}
+        <SortableContext
+          items={tasks.map((t) => `task-${t.number}`)}
+          strategy={verticalListSortingStrategy}
+        >
+          {tasks.length ? (
+            tasks.map((t) => (
+              <TaskCard key={t.number} task={t} onStatusTap={onStatusTap} onLabelTap={onLabelTap} />
+            ))
+          ) : (
+            <p className="px-1 pt-1.5 text-xs text-sub/50">なし</p>
+          )}
+        </SortableContext>
       </div>
     </section>
   )

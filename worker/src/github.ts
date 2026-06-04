@@ -7,6 +7,7 @@ import {
   BOARD_QUERY,
   DELETE_ITEM_MUTATION,
   META_QUERY,
+  MOVE_ITEM_MUTATION,
   ONE_ISSUE_QUERY,
   SET_STATUS_MUTATION,
   TASK_DETAIL_QUERY,
@@ -346,4 +347,11 @@ export async function renameLabel(
 
 export async function deleteLabel(env: Env, name: string): Promise<void> {
   await ghRest(env, 'DELETE', `/repos/${OWNER}/${REPO}/labels/${encodeURIComponent(name)}`)
+}
+
+/** Reorder: place `itemId` right after `afterItemId` in the project order (null = top). */
+export async function reorderTask(env: Env, itemId: unknown, afterItemId: unknown): Promise<void> {
+  if (typeof itemId !== 'string' || !itemId) throw new ApiError('itemId が不正です', 400)
+  const after = typeof afterItemId === 'string' && afterItemId ? afterItemId : null
+  await ghGraphQL(env, MOVE_ITEM_MUTATION, { project: PROJECT_ID, item: itemId, after })
 }

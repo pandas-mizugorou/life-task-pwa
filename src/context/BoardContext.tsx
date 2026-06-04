@@ -32,6 +32,13 @@ interface BoardValue {
   completed: Task[]
   /** Close (= complete) or reopen a task. */
   setTaskState: (number: number, state: 'open' | 'closed') => Promise<Task>
+  /** Apply an optimistic reorder of the flat task list + persist the moved item's position. */
+  reorderTasks: (
+    newTasks: Task[],
+    number: number,
+    itemId: string,
+    afterItemId: string | null,
+  ) => Promise<void>
 }
 
 const Ctx = createContext<BoardValue | null>(null)
@@ -154,6 +161,21 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     [toast],
   )
 
+  const reorderTasks = useCallback(
+    async (newTasks: Task[], number: number, itemId: string, afterItemId: string | null) => {
+      const prev = tasksRef.current
+      setTasks(newTasks) // optimistic order
+      haptic(8)
+      try {
+        await api.reorderTask(number, itemId, afterItemId)
+      } catch (e) {
+        setTasks(prev) // rollback
+        toast({ variant: 'error', title: '並べ替えに失敗', description: errMsg(e) })
+      }
+    },
+    [toast],
+  )
+
   const addTask = useCallback(async (input: NewTask) => {
     const { task } = await api.addTask(input)
     setTasks((ts) => [task, ...ts])
@@ -259,6 +281,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         setTaskLabels,
         completed,
         setTaskState,
+        reorderTasks,
       }}
     >
       {children}

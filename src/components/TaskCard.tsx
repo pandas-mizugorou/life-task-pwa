@@ -1,9 +1,11 @@
-import { useDraggable } from '@dnd-kit/core'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useNavigate } from 'react-router-dom'
 import type { Task } from '../lib/types'
 import { TaskCardView } from './TaskCardView'
 
-/** Draggable task card. Long-press to pick up (so quick swipes still scroll). */
+/** Sortable task card. Long-press to pick up: drag within a column to reorder,
+ *  or onto another column to change status. Quick swipes still scroll. */
 export function TaskCard({
   task,
   onStatusTap,
@@ -14,7 +16,7 @@ export function TaskCard({
   onLabelTap: (t: Task) => void
 }) {
   const navigate = useNavigate()
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `task-${task.number}`,
     data: { task },
   })
@@ -22,6 +24,7 @@ export function TaskCard({
   return (
     <TaskCardView
       ref={setNodeRef}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
       task={task}
       onStatusTap={onStatusTap}
       onLabelTap={onLabelTap}

@@ -4,12 +4,13 @@ import {
   DragOverlay,
   MouseSensor,
   TouchSensor,
-  pointerWithin,
+  closestCorners,
   useSensor,
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
+import { arrayMove } from '@dnd-kit/sortable'
 import { useBoard } from '../context/BoardContext'
 import { FullSpinner } from '../components/ui/Spinner'
 import { ErrorState } from '../components/ui/States'
@@ -67,11 +68,51 @@ export function Board() {
 
   const onDragEnd = (e: DragEndEvent) => {
     setActiveTask(null)
-    const t = e.active.data.current?.task as Task | undefined
-    const to = e.over?.id as Status | undefined
-    if (t && to && (ACTIVE_STATUSES as string[]).includes(to) && t.status !== to) {
-      board.setStatus(t.number, to) // optimistic move (with rollback on failure)
+    const activeId = String(e.active.id)
+    const overId = e.over ? String(e.over.id) : null
+    if (!overId || overId === activeId) return
+
+    const moved = e.active.data.current?.task as Task | undefined
+    if (!moved) return
+
+    const tasks = board.tasks
+    const fromIndex = tasks.findIndex((t) => `task-${t.number}` === activeId)
+    if (fromIndex < 0) return
+
+    // Resolve the drop target's column (and the card dropped onto, if any).
+    let targetCol: Status
+    let overTask: Task | undefined
+    if ((ACTIVE_STATUSES as string[]).includes(overId)) {
+      targetCol = overId as Status
+    } else {
+      overTask = tasks.find((t) => `task-${t.number}` === overId)
+      if (!overTask) return
+      targetCol = overTask.status
     }
+
+    // Different column → change status (keeps default position).
+    if (moved.status !== targetCol) {
+      board.setStatus(moved.number, targetCol)
+      return
+    }
+
+    // Same column → reorder within the flat list, then persist the new position.
+    let newTasks: Task[]
+    if (overTask) {
+      const toIndex = tasks.findIndex((t) => t.number === overTask!.number)
+      if (toIndex < 0 || toIndex === fromIndex) return
+      newTasks = arrayMove(tasks, fromIndex, toIndex)
+    } else {
+      // dropped on the column's empty area → move to the end of that column
+      const inCol = tasks.filter((t) => t.status === targetCol)
+      const last = inCol[inCol.length - 1]
+      if (!last || last.number === moved.number) return
+      const toIndex = tasks.findIndex((t) => t.number === last.number)
+      newTasks = arrayMove(tasks, fromIndex, toIndex)
+    }
+    const newIndex = newTasks.findIndex((t) => t.number === moved.number)
+    const afterItemId = newIndex > 0 ? newTasks[newIndex - 1].itemId : null
+    board.reorderTasks(newTasks, moved.number, moved.itemId, afterItemId)
   }
 
   return (
@@ -88,7 +129,7 @@ export function Board() {
           still scroll. Snap is disabled while dragging so auto-scroll stays smooth. */}
       <DndContext
         sensors={sensors}
-        collisionDetection={pointerWithin}
+        collisionDetection={closestCorners}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
         onDragCancel={() => setActiveTask(null)}

@@ -107,3 +107,11 @@ export const DELETE_ITEM_MUTATION = /* GraphQL */ `
 mutation DeleteItem($project: ID!, $item: ID!) {
   deleteProjectV2Item(input: { projectId: $project, itemId: $item }) { deletedItemId }
 }`
+
+/** Move an item to just after `after` (null/omitted = top of the project order). */
+export const MOVE_ITEM_MUTATION = /* GraphQL */ `
+mutation MoveItem($project: ID!, $item: ID!, $after: ID) {
+  updateProjectV2ItemPosition(input: { projectId: $project, itemId: $item, afterId: $after }) {
+    clientMutationId
+  }
+}`

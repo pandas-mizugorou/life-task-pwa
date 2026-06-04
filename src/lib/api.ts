@@ -83,6 +83,12 @@ export const removeFromBoard = (n: number) =>
 export const setTaskLabels = (n: number, labels: string[]) =>
   call<{ task: Task }>(`/api/tasks/${n}/labels`, { method: 'PUT', body: JSON.stringify({ labels }) })
 
+export const reorderTask = (n: number, itemId: string, afterItemId: string | null) =>
+  call<{ ok: true }>(`/api/tasks/${n}/position`, {
+    method: 'PATCH',
+    body: JSON.stringify({ itemId, afterItemId }),
+  })
+
 // ---- labels ----
 export const getLabels = () => call<{ labels: Label[] }>('/api/labels')
 
