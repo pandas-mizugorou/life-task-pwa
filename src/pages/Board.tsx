@@ -13,7 +13,6 @@ import {
   type DragOverEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
-import { arrayMove } from '@dnd-kit/sortable'
 import { useBoard } from '../context/BoardContext'
 import { FullSpinner } from '../components/ui/Spinner'
 import { ErrorState } from '../components/ui/States'
@@ -43,6 +42,7 @@ export function Board() {
   const [labelTarget, setLabelTarget] = useState<Task | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [overColumn, setOverColumn] = useState<Status | null>(null)
+  const [dropIndicator, setDropIndicator] = useState<{ col: Status; index: number } | null>(null)
 
   // Long-press to drag on touch (so quick swipes still scroll the board/columns);
   // small move threshold to start a drag with a mouse on desktop.
@@ -81,66 +81,84 @@ export function Board() {
   // when the pointer is over another card (not just the empty column area).
   const onDragOver = (e: DragOverEvent) => {
     const overId = e.over ? String(e.over.id) : null
-    let col: Status | null = null
-    if (overId) {
-      if ((ACTIVE_STATUSES as string[]).includes(overId)) {
-        col = overId as Status
-      } else {
-        const t = board.tasks.find((x) => `task-${x.number}` === overId)
-        col = t ? t.status : null
-      }
-    }
-    setOverColumn((prev) => (prev === col ? prev : col))
-  }
-
-  const onDragEnd = (e: DragEndEvent) => {
-    setActiveTask(null)
-    setOverColumn(null)
-    const activeId = String(e.active.id)
-    const overId = e.over ? String(e.over.id) : null
-    if (!overId || overId === activeId) return
-
     const moved = e.active.data.current?.task as Task | undefined
-    if (!moved) return
-
-    const tasks = board.tasks
-    const fromIndex = tasks.findIndex((t) => `task-${t.number}` === activeId)
-    if (fromIndex < 0) return
-
-    // Resolve the drop target's column (and the card dropped onto, if any).
-    let targetCol: Status
-    let overTask: Task | undefined
-    if ((ACTIVE_STATUSES as string[]).includes(overId)) {
-      targetCol = overId as Status
-    } else {
-      overTask = tasks.find((t) => `task-${t.number}` === overId)
-      if (!overTask) return
-      targetCol = overTask.status
-    }
-
-    // Different column → change status (keeps default position).
-    if (moved.status !== targetCol) {
-      board.setStatus(moved.number, targetCol)
+    if (!overId || !moved) {
+      setOverColumn(null)
+      setDropIndicator(null)
       return
     }
 
-    // Same column → reorder within the flat list, then persist the new position.
-    let newTasks: Task[]
-    if (overTask) {
-      const toIndex = tasks.findIndex((t) => t.number === overTask!.number)
-      if (toIndex < 0 || toIndex === fromIndex) return
-      newTasks = arrayMove(tasks, fromIndex, toIndex)
-    } else {
-      // dropped on the column's empty area → move to the end of that column
-      const inCol = tasks.filter((t) => t.status === targetCol)
-      const last = inCol[inCol.length - 1]
-      if (!last || last.number === moved.number) return
-      const toIndex = tasks.findIndex((t) => t.number === last.number)
-      newTasks = arrayMove(tasks, fromIndex, toIndex)
+    let col: Status | null = null
+    let index = 0
+    if ((ACTIVE_STATUSES as string[]).includes(overId)) {
+      col = overId as Status
+      index = board.byStatus[col].length // dropped on the column area → end
+    } else if (overId.startsWith('drop-')) {
+      const overNum = Number(overId.slice(5))
+      const overTask = board.tasks.find((t) => t.number === overNum)
+      if (overTask) {
+        col = overTask.status
+        const colTasks = board.byStatus[col]
+        const overIdx = colTasks.findIndex((t) => t.number === overNum)
+        const overRect = e.over?.rect
+        const activeRect = e.active.rect.current.translated
+        // insert below the hovered card if the dragged card's centre is past its centre
+        const after =
+          activeRect && overRect
+            ? activeRect.top + activeRect.height / 2 > overRect.top + overRect.height / 2
+            : false
+        index = after ? overIdx + 1 : overIdx
+      }
     }
-    const newIndex = newTasks.findIndex((t) => t.number === moved.number)
-    const afterItemId = newIndex > 0 ? newTasks[newIndex - 1].itemId : null
-    board.reorderTasks(newTasks, moved.number, moved.itemId, afterItemId)
+
+    setOverColumn((prev) => (prev === col ? prev : col))
+    setDropIndicator((prev) => {
+      if (!col) return prev === null ? prev : null
+      if (prev && prev.col === col && prev.index === index) return prev
+      return { col, index }
+    })
+  }
+
+  const onDragEnd = (e: DragEndEvent) => {
+    const ind = dropIndicator
+    setActiveTask(null)
+    setOverColumn(null)
+    setDropIndicator(null)
+
+    const moved = e.active.data.current?.task as Task | undefined
+    if (!moved || !ind) return
+    const { col: targetCol, index } = ind
+
+    const flat = board.tasks.slice()
+    const fromIdx = flat.findIndex((t) => t.number === moved.number)
+    if (fromIdx < 0) return
+
+    // The card the line sits before (null = end of column). Skip drops onto self.
+    const colTasks = board.byStatus[targetCol]
+    const anchor = index < colTasks.length ? colTasks[index] : null
+    if (anchor && anchor.number === moved.number) return
+
+    const [m] = flat.splice(fromIdx, 1)
+    const newStatus: Status | null = moved.status !== targetCol ? targetCol : null
+    const movedNew = newStatus ? { ...m, status: newStatus } : m
+
+    let insertAt: number
+    if (anchor) {
+      insertAt = flat.findIndex((t) => t.number === anchor.number)
+      if (insertAt < 0) insertAt = flat.length
+    } else {
+      let last = -1
+      for (let i = 0; i < flat.length; i++) if (flat[i].status === targetCol) last = i
+      insertAt = last >= 0 ? last + 1 : flat.length
+    }
+    flat.splice(insertAt, 0, movedNew)
+
+    const sameOrder =
+      flat.map((t) => t.number).join(',') === board.tasks.map((t) => t.number).join(',')
+    if (sameOrder && !newStatus) return // nothing actually changed
+
+    const afterItemId = insertAt > 0 ? flat[insertAt - 1].itemId : null
+    board.moveTask(flat, moved.number, moved.itemId, afterItemId, newStatus)
   }
 
   return (
@@ -178,6 +196,7 @@ export function Board() {
               status={s}
               tasks={board.byStatus[s]}
               isTarget={overColumn === s}
+              lineIndex={dropIndicator && dropIndicator.col === s ? dropIndicator.index : null}
               onStatusTap={setPicker}
               onLabelTap={setLabelTarget}
               onAdd={setAddStatus}

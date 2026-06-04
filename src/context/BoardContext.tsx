@@ -32,12 +32,13 @@ interface BoardValue {
   completed: Task[]
   /** Close (= complete) or reopen a task. */
   setTaskState: (number: number, state: 'open' | 'closed') => Promise<Task>
-  /** Apply an optimistic reorder of the flat task list + persist the moved item's position. */
-  reorderTasks: (
+  /** Apply an optimistic move (reorder + optional status change) and persist it. */
+  moveTask: (
     newTasks: Task[],
     number: number,
     itemId: string,
     afterItemId: string | null,
+    newStatus: Status | null,
   ) => Promise<void>
 }
 
@@ -161,16 +162,23 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     [toast],
   )
 
-  const reorderTasks = useCallback(
-    async (newTasks: Task[], number: number, itemId: string, afterItemId: string | null) => {
+  const moveTask = useCallback(
+    async (
+      newTasks: Task[],
+      number: number,
+      itemId: string,
+      afterItemId: string | null,
+      newStatus: Status | null,
+    ) => {
       const prev = tasksRef.current
-      setTasks(newTasks) // optimistic order
-      haptic(8)
+      setTasks(newTasks) // optimistic (reorder + status)
+      haptic(10)
       try {
+        if (newStatus) await api.setStatus(number, newStatus)
         await api.reorderTask(number, itemId, afterItemId)
       } catch (e) {
         setTasks(prev) // rollback
-        toast({ variant: 'error', title: '並べ替えに失敗', description: errMsg(e) })
+        toast({ variant: 'error', title: '移動に失敗', description: errMsg(e) })
       }
     },
     [toast],
@@ -281,7 +289,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         setTaskLabels,
         completed,
         setTaskState,
-        reorderTasks,
+        moveTask,
       }}
     >
       {children}

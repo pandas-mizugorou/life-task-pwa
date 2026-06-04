@@ -1,24 +1,28 @@
+import { Fragment } from 'react'
 import { useDroppable } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Plus } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { STATUS_META } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 import { TaskCard } from './TaskCard'
 
-/** A kanban column: header (with + to add into this status) + droppable scrolling list. */
+/** A kanban column: header (with + to add) + droppable list that shows an
+ *  insertion line at the projected drop position while dragging. */
 export function StatusColumn({
   status,
   tasks,
   isTarget,
+  lineIndex,
   onStatusTap,
   onLabelTap,
   onAdd,
 }: {
   status: Status
   tasks: Task[]
-  /** True while a dragged card is hovering over this column (highlight target). */
+  /** True while a dragged card hovers over this column (highlight). */
   isTarget?: boolean
+  /** Show an insertion line before the card at this index (= length means end). */
+  lineIndex?: number | null
   onStatusTap: (t: Task) => void
   onLabelTap: (t: Task) => void
   onAdd: (status: Status) => void
@@ -54,19 +58,22 @@ export function StatusColumn({
           highlight && 'border-accent2 bg-accent2/15',
         )}
       >
-        <SortableContext
-          items={tasks.map((t) => `task-${t.number}`)}
-          strategy={verticalListSortingStrategy}
-        >
-          {tasks.length ? (
-            tasks.map((t) => (
-              <TaskCard key={t.number} task={t} onStatusTap={onStatusTap} onLabelTap={onLabelTap} />
-            ))
-          ) : (
-            <p className="px-1 pt-1.5 text-xs text-sub/50">なし</p>
-          )}
-        </SortableContext>
+        {tasks.length === 0 && lineIndex == null && (
+          <p className="px-1 pt-1.5 text-xs text-sub/50">なし</p>
+        )}
+        {tasks.map((t, i) => (
+          <Fragment key={t.number}>
+            {lineIndex === i && <DropLine />}
+            <TaskCard task={t} onStatusTap={onStatusTap} onLabelTap={onLabelTap} />
+          </Fragment>
+        ))}
+        {lineIndex === tasks.length && <DropLine />}
       </div>
     </section>
   )
+}
+
+/** The "drop here" insertion indicator (glowing accent line). */
+function DropLine() {
+  return <div className="my-0.5 h-1 rounded-full bg-accent2 ring-2 ring-accent2/30" aria-hidden />
 }
