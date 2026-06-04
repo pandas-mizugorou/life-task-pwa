@@ -1,69 +1,72 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#5b8cff"/>
-      <stop offset="0.52" stop-color="#37a7c6"/>
-      <stop offset="1" stop-color="#33d08f"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.26" cy="0.2" r="0.95">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.4"/>
-      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="shade" cx="0.82" cy="0.92" r="0.85">
-      <stop offset="0" stop-color="#05132a" stop-opacity="0.22"/>
-      <stop offset="0.65" stop-color="#05132a" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="check" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#37e08a"/>
-      <stop offset="1" stop-color="#16ab63"/>
-    </linearGradient>
-    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef3fb"/>
+      <stop offset="1" stop-color="#eef1f6"/>
     </linearGradient>
   </defs>
 
-  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
-  <rect width="512" height="512" rx="116" fill="url(#shade)"/>
-  <rect x="5" y="5" width="502" height="502" rx="112" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="3"/>
+  <rect width="512" height="512" rx="112" fill="url(#paper)"/>
+  <rect x="3" y="3" width="506" height="506" rx="109" fill="none" stroke="#d0d7de" stroke-width="3"/>
 
-  <!-- ===== kanban board: 3 lanes ===== -->
   <g>
-    <rect x="44" y="104" width="128" height="304" rx="26" fill="#ffffff" opacity="0.15"/>
-    <rect x="192" y="104" width="128" height="304" rx="26" fill="#ffffff" opacity="0.15"/>
-    <rect x="340" y="104" width="128" height="304" rx="26" fill="#ffffff" opacity="0.15"/>
+    <rect x="24" y="40" width="148" height="432" rx="22" fill="#f2f5f9" stroke="#dbe1ea" stroke-width="2"/>
+    <rect x="182" y="40" width="148" height="432" rx="22" fill="#f2f5f9" stroke="#dbe1ea" stroke-width="2"/>
+    <rect x="340" y="40" width="148" height="432" rx="22" fill="#f2f5f9" stroke="#dbe1ea" stroke-width="2"/>
   </g>
 
-  <!-- column headers: status dot + label -->
-  <circle cx="74" cy="142" r="10" fill="#cdd6ec"/>
-  <rect x="92" y="136" width="58" height="12" rx="6" fill="#ffffff" opacity="0.55"/>
-  <circle cx="222" cy="142" r="10" fill="#9ec1ff"/>
-  <rect x="240" y="136" width="58" height="12" rx="6" fill="#ffffff" opacity="0.55"/>
-  <circle cx="370" cy="142" r="10" fill="#7ff0c0"/>
-  <rect x="388" y="136" width="58" height="12" rx="6" fill="#ffffff" opacity="0.55"/>
+  <circle cx="52" cy="76" r="10" fill="#8b95a5"/>
+  <rect x="70" y="69" width="78" height="14" rx="7" fill="#c3cbd8"/>
+  <circle cx="210" cy="76" r="10" fill="#3b82f6"/>
+  <rect x="228" y="69" width="78" height="14" rx="7" fill="#c3cbd8"/>
+  <circle cx="368" cy="76" r="10" fill="#2da44e"/>
+  <rect x="386" y="69" width="78" height="14" rx="7" fill="#c3cbd8"/>
 
-  <!-- ===== cards ===== -->
-  <!-- col 1: To Do (two cards) -->
-  <rect x="58" y="178" width="100" height="80" rx="16" fill="url(#card)"/>
-  <rect x="74" y="200" width="66" height="12" rx="6" fill="#16213c" opacity="0.82"/>
-  <rect x="74" y="222" width="44" height="10" rx="5" fill="#16213c" opacity="0.3"/>
-  <rect x="58" y="276" width="100" height="80" rx="16" fill="url(#card)"/>
-  <rect x="74" y="298" width="60" height="12" rx="6" fill="#16213c" opacity="0.82"/>
-  <rect x="74" y="320" width="40" height="10" rx="5" fill="#16213c" opacity="0.3"/>
+  <g>
+    <rect x="40" y="116" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+    <circle cx="66" cy="148" r="12" fill="none" stroke="#1f9d57" stroke-width="5"/>
+    <circle cx="66" cy="148" r="3.5" fill="#1f9d57"/>
+    <rect x="90" y="142" width="52" height="12" rx="6" fill="#2b3440"/>
+    <rect x="56" y="186" width="84" height="12" rx="6" fill="#2b3440" opacity="0.82"/>
+    <rect x="56" y="208" width="56" height="10" rx="5" fill="#8b95a5"/>
 
-  <!-- col 2: In Progress (one tall card) -->
-  <rect x="206" y="178" width="100" height="150" rx="16" fill="url(#card)"/>
-  <rect x="222" y="198" width="40" height="14" rx="7" fill="#5b8cff"/>
-  <rect x="222" y="226" width="68" height="12" rx="6" fill="#16213c" opacity="0.82"/>
-  <rect x="222" y="248" width="52" height="10" rx="5" fill="#16213c" opacity="0.3"/>
-  <rect x="222" y="296" width="68" height="10" rx="5" fill="#e3e9f4"/>
-  <rect x="222" y="296" width="40" height="10" rx="5" fill="#5b8cff"/>
+    <rect x="40" y="252" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+    <circle cx="66" cy="284" r="12" fill="none" stroke="#1f9d57" stroke-width="5"/>
+    <circle cx="66" cy="284" r="3.5" fill="#1f9d57"/>
+    <rect x="90" y="278" width="50" height="12" rx="6" fill="#2b3440"/>
+    <rect x="56" y="322" width="84" height="12" rx="6" fill="#2b3440" opacity="0.82"/>
+    <rect x="56" y="344" width="48" height="10" rx="5" fill="#8b95a5"/>
+  </g>
 
-  <!-- col 3: Done (checked card) -->
-  <rect x="354" y="178" width="100" height="80" rx="16" fill="url(#card)"/>
-  <circle cx="384" cy="218" r="17" fill="url(#check)"/>
-  <path d="M375 218 l6 6 l12 -13" fill="none" stroke="#ffffff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="410" y="212" width="34" height="12" rx="6" fill="#16213c" opacity="0.5"/>
-  <rect x="354" y="276" width="100" height="64" rx="16" fill="url(#card)" opacity="0.55"/>
+  <g>
+    <rect x="198" y="116" width="116" height="184" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+    <rect x="214" y="138" width="46" height="16" rx="8" fill="#3b82f6"/>
+    <rect x="214" y="168" width="84" height="12" rx="6" fill="#2b3440"/>
+    <rect x="214" y="190" width="64" height="10" rx="5" fill="#8b95a5"/>
+    <rect x="214" y="252" width="84" height="12" rx="6" fill="#e6eaf1"/>
+    <rect x="214" y="252" width="50" height="12" rx="6" fill="#3b82f6"/>
+
+    <rect x="198" y="316" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+    <circle cx="224" cy="348" r="12" fill="none" stroke="#1f9d57" stroke-width="5"/>
+    <circle cx="224" cy="348" r="3.5" fill="#1f9d57"/>
+    <rect x="248" y="342" width="50" height="12" rx="6" fill="#2b3440"/>
+    <rect x="214" y="386" width="84" height="12" rx="6" fill="#2b3440" opacity="0.82"/>
+    <rect x="214" y="408" width="52" height="10" rx="5" fill="#8b95a5"/>
+  </g>
+
+  <g>
+    <rect x="356" y="116" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+    <circle cx="384" cy="150" r="16" fill="#2da44e"/>
+    <path d="M375 150 l6 7 l12 -14" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="410" y="144" width="44" height="12" rx="6" fill="#aeb7c4"/>
+    <rect x="372" y="190" width="84" height="11" rx="5" fill="#c3cbd8"/>
+    <rect x="372" y="210" width="56" height="9" rx="4" fill="#c3cbd8"/>
+
+    <rect x="356" y="252" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+    <circle cx="384" cy="286" r="16" fill="#2da44e"/>
+    <path d="M375 286 l6 7 l12 -14" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="410" y="280" width="44" height="12" rx="6" fill="#aeb7c4"/>
+    <rect x="372" y="326" width="84" height="11" rx="5" fill="#c3cbd8"/>
+    <rect x="372" y="346" width="48" height="9" rx="4" fill="#c3cbd8"/>
+  </g>
 </svg>
