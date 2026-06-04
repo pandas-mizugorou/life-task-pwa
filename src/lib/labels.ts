@@ -1,14 +1,21 @@
-import type { Label } from './types'
-
-/** The repo's label set (pandas-mizugorou/life). Colors are 6-digit hex, no '#'. */
-export const LABELS: Label[] = [
-  { name: 'IIJ', color: '1f6feb' },
-  { name: 'AIx', color: '8957e5' },
-  { name: 'プライベート', color: '2da44e' },
-  { name: 'Swift', color: 'f05138' },
-  { name: '副業', color: 'bf8700' },
+/** Curated color palette for the label editor (6-digit hex, no '#'). */
+export const LABEL_COLORS: string[] = [
+  '1f6feb',
+  '8957e5',
+  '2da44e',
+  'f05138',
+  'bf8700',
+  'd73a4a',
+  'e99695',
+  'fbca04',
+  '0e8a16',
+  '006b75',
+  '0052cc',
+  '5319e7',
+  'b60205',
+  'd93f0b',
+  'c5def5',
+  'bfdadc',
+  'd4c5f9',
+  '8b97b8',
 ]
-
-export function labelColor(name: string): string {
-  return LABELS.find((l) => l.name === name)?.color ?? '8b97b8'
-}

@@ -1,13 +1,15 @@
 import { cn } from '../lib/cn'
-import { LABELS } from '../lib/labels'
+import type { Label } from '../lib/types'
 
 export function LabelFilterChips({
   value,
   onChange,
+  labels,
   includeAll = true,
 }: {
   value: string | null
   onChange: (v: string | null) => void
+  labels: Label[]
   includeAll?: boolean
 }) {
   return (
@@ -15,7 +17,7 @@ export function LabelFilterChips({
       {includeAll && (
         <Chip active={value === null} label="すべて" color={null} onClick={() => onChange(null)} />
       )}
-      {LABELS.map((l) => (
+      {labels.map((l) => (
         <Chip
           key={l.name}
           active={value === l.name}

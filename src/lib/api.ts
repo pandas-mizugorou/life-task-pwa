@@ -1,7 +1,7 @@
 // Typed fetch wrapper to the Cloudflare Worker. The PWA holds no GitHub
 // credential — only the Worker URL and the shared passphrase (X-App-Key).
 
-import type { Comment, Meta, NewTask, Status, Task, TaskPatch } from './types'
+import type { Comment, Label, Meta, NewTask, Status, Task, TaskPatch } from './types'
 
 const KEY_STORAGE = 'ltp-key'
 const URL_STORAGE = 'ltp-worker-url'
@@ -79,3 +79,18 @@ export const addComment = (n: number, body: string) =>
 
 export const removeFromBoard = (n: number) =>
   call<{ ok: true }>(`/api/tasks/${n}/item`, { method: 'DELETE' })
+
+// ---- labels ----
+export const getLabels = () => call<{ labels: Label[] }>('/api/labels')
+
+export const createLabel = (name: string, color: string) =>
+  call<{ label: Label }>('/api/labels', { method: 'POST', body: JSON.stringify({ name, color }) })
+
+export const renameLabel = (name: string, patch: { newName?: string; color?: string }) =>
+  call<{ label: Label }>(`/api/labels/${encodeURIComponent(name)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+
+export const deleteLabel = (name: string) =>
+  call<{ ok: true }>(`/api/labels/${encodeURIComponent(name)}`, { method: 'DELETE' })

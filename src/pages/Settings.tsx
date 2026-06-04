@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ExternalLink, Link2, Lock, ShieldCheck } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { ExternalLink, Link2, Lock, ShieldCheck, Tags } from 'lucide-react'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Input, Label } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
@@ -83,6 +84,8 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
         </div>
       </Card>
 
+      <LabelsCard />
+
       <Card>
         <CardTitle>
           <span className="inline-flex items-center gap-2">
@@ -152,6 +155,27 @@ function ShowClosedToggle() {
           aria-label="完了したタスクも表示"
         />
       </div>
+    </Card>
+  )
+}
+
+function LabelsCard() {
+  const navigate = useNavigate()
+  return (
+    <Card>
+      <CardTitle>
+        <span className="inline-flex items-center gap-2">
+          <Tags className="h-4 w-4 text-accent" />
+          ラベル
+        </span>
+      </CardTitle>
+      <p className="text-sm leading-relaxed text-sub">
+        タスクに付けるラベルの追加・名称変更・色変更・削除ができます（GitHub の life リポジトリに反映）。
+      </p>
+      <Button variant="secondary" className="mt-3" onClick={() => navigate('/labels')}>
+        <Tags className="h-4 w-4" />
+        ラベルを編集
+      </Button>
     </Card>
   )
 }

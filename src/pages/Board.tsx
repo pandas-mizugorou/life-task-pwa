@@ -67,7 +67,11 @@ export function Board() {
   return (
     <div className="flex h-full flex-col">
       <div className="shrink-0 px-4 pt-4">
-        <LabelFilterChips value={board.labelFilter} onChange={board.setLabelFilter} />
+        <LabelFilterChips
+          value={board.labelFilter}
+          onChange={board.setLabelFilter}
+          labels={board.labels}
+        />
       </div>
 
       {/* Horizontal kanban. Long-press a card to drag it between columns; quick swipes

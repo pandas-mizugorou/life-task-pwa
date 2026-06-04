@@ -41,6 +41,24 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
     return { tasks: await github.getBoard(env, includeClosed), statuses: STATUS_ORDER }
   }
 
+  if (p === '/api/labels' && m === 'GET') return { labels: await github.listLabels(env) }
+  if (p === '/api/labels' && m === 'POST') {
+    const b = (await request.json()) as any
+    return { label: await github.createLabel(env, b) }
+  }
+  const lm = p.match(/^\/api\/labels\/(.+)$/)
+  if (lm) {
+    const name = decodeURIComponent(lm[1])
+    if (m === 'PATCH') {
+      const b = (await request.json()) as any
+      return { label: await github.renameLabel(env, name, b) }
+    }
+    if (m === 'DELETE') {
+      await github.deleteLabel(env, name)
+      return { ok: true }
+    }
+  }
+
   if (p === '/api/tasks' && m === 'POST') {
     const b = (await request.json()) as any
     return { task: await github.createTask(env, b) }

@@ -3,7 +3,7 @@ import { useToast } from '../components/ui/Toast'
 import * as api from '../lib/api'
 import { errMsg, haptic } from '../lib/haptics'
 import { STATUS_ORDER } from '../lib/status'
-import type { NewTask, Status, Task } from '../lib/types'
+import type { Label, NewTask, Status, Task } from '../lib/types'
 
 interface BoardValue {
   loading: boolean
@@ -22,6 +22,11 @@ interface BoardValue {
   updateTaskLocal: (task: Task) => void
   /** Drop a task from the board cache (after close / remove-from-board). */
   removeTaskLocal: (number: number) => void
+  labels: Label[]
+  refreshLabels: () => Promise<void>
+  createLabel: (name: string, color: string) => Promise<void>
+  renameLabel: (name: string, patch: { newName?: string; color?: string }) => Promise<void>
+  deleteLabel: (name: string) => Promise<void>
 }
 
 const Ctx = createContext<BoardValue | null>(null)
@@ -38,6 +43,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [labels, setLabels] = useState<Label[]>([])
   const [labelFilter, setLabelFilter] = useState<string | null>(null)
   const [showClosed, setShowClosedState] = useState<boolean>(
     () => localStorage.getItem('ltp-show-closed') === '1',
@@ -115,6 +121,45 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     setTasks((ts) => ts.filter((t) => t.number !== number))
   }, [])
 
+  const refreshLabels = useCallback(async () => {
+    try {
+      const { labels } = await api.getLabels()
+      setLabels(labels)
+    } catch {
+      /* labels are non-critical for rendering the board; ignore transient errors */
+    }
+  }, [])
+
+  useEffect(() => {
+    refreshLabels()
+  }, [refreshLabels])
+
+  const createLabel = useCallback(
+    async (name: string, color: string) => {
+      await api.createLabel(name, color)
+      await refreshLabels()
+    },
+    [refreshLabels],
+  )
+
+  const renameLabel = useCallback(
+    async (name: string, patch: { newName?: string; color?: string }) => {
+      await api.renameLabel(name, patch)
+      if (labelFilter === name && patch.newName) setLabelFilter(patch.newName)
+      await Promise.all([refreshLabels(), refresh()]) // names/colors are embedded in tasks
+    },
+    [refreshLabels, refresh, labelFilter],
+  )
+
+  const deleteLabel = useCallback(
+    async (name: string) => {
+      await api.deleteLabel(name)
+      if (labelFilter === name) setLabelFilter(null)
+      await Promise.all([refreshLabels(), refresh()])
+    },
+    [refreshLabels, refresh, labelFilter],
+  )
+
   const byStatus = useMemo(() => {
     const groups = Object.fromEntries(STATUS_ORDER.map((s) => [s, [] as Task[]])) as Record<
       Status,
@@ -147,6 +192,11 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         addTask,
         updateTaskLocal,
         removeTaskLocal,
+        labels,
+        refreshLabels,
+        createLabel,
+        renameLabel,
+        deleteLabel,
       }}
     >
       {children}

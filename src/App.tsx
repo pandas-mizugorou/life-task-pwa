@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext'
 import { BoardProvider } from './context/BoardContext'
 import { Board } from './pages/Board'
 import { Gate } from './pages/Gate'
+import { LabelManager } from './pages/LabelManager'
 import { Settings } from './pages/Settings'
 import { TaskDetail } from './pages/TaskDetail'
 
@@ -22,6 +23,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<Board />} />
             <Route path="/t/:number" element={<TaskDetail />} />
+            <Route path="/labels" element={<LabelManager />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -81,7 +81,12 @@ export function QuickAddSheet({
           </div>
           <div>
             <Label>ラベル（任意）</Label>
-            <LabelFilterChips value={label} onChange={setLabel} includeAll={false} />
+            <LabelFilterChips
+              value={label}
+              onChange={setLabel}
+              includeAll={false}
+              labels={board.labels}
+            />
           </div>
           <div>
             <Label htmlFor="qa-status">ステータス</Label>

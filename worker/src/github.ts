@@ -31,14 +31,11 @@ const STATUS_OPTIONS: Record<Status, string> = {
 
 export const STATUS_ORDER: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pending', 'Done']
 
-const REPO_LABELS: Label[] = [
-  { name: 'IIJ', color: '1f6feb' },
-  { name: 'AIx', color: '8957e5' },
-  { name: 'プライベート', color: '2da44e' },
-  { name: 'Swift', color: 'f05138' },
-  { name: '副業', color: 'bf8700' },
-]
-const ALLOWED_LABELS = new Set(REPO_LABELS.map((l) => l.name))
+/** Normalize a hex color to GitHub's 6-digit form (no '#'); fall back to neutral gray. */
+function normalizeColor(c?: string): string {
+  const v = (c ?? '').replace(/^#/, '').trim()
+  return /^[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : '8b97b8'
+}
 
 function isStatus(s: unknown): s is Status {
   return typeof s === 'string' && (STATUS_ORDER as string[]).includes(s)
@@ -87,7 +84,7 @@ async function ghGraphQL<T = unknown>(
 
 async function ghRest(
   env: Env,
-  method: 'GET' | 'POST' | 'PATCH',
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<any> {
@@ -164,7 +161,12 @@ export async function getMeta(env: Env): Promise<Meta> {
   const data = await ghGraphQL<any>(env, META_QUERY, { project: PROJECT_ID })
   const field = data?.node?.field
   const statuses = (field?.options ?? []).map((o: any) => ({ name: o.name, optionId: o.id }))
-  return { projectId: PROJECT_ID, statusFieldId: field?.id ?? STATUS_FIELD_ID, statuses, labels: REPO_LABELS }
+  return {
+    projectId: PROJECT_ID,
+    statusFieldId: field?.id ?? STATUS_FIELD_ID,
+    statuses,
+    labels: await listLabels(env),
+  }
 }
 
 export async function getBoard(env: Env, includeClosed: boolean): Promise<Task[]> {
@@ -207,7 +209,6 @@ export async function createTask(
   if (!title) throw new ApiError('タイトルを入力してください', 400)
   const status: Status = isStatus(input?.status) ? input.status : 'Backlog'
   const label = input?.label
-  if (label && !ALLOWED_LABELS.has(label)) throw new ApiError(`未知のラベル: ${label}`, 400)
   const body = typeof input?.body === 'string' ? input.body : undefined
 
   // 1. create the issue (REST), with the label on the issue (the board mirrors it)
@@ -294,4 +295,42 @@ export async function removeFromBoard(env: Env, number: number): Promise<void> {
   if (!raw) throw new ApiError(`Issue #${number} が見つかりません`, 404)
   if (!raw.task.itemId) return // not on the board — nothing to remove (idempotent)
   await ghGraphQL(env, DELETE_ITEM_MUTATION, { project: PROJECT_ID, item: raw.task.itemId })
+}
+
+// ---- labels (REST; scoped to OWNER/REPO) ------------------------------------
+export async function listLabels(env: Env): Promise<Label[]> {
+  const arr = await ghRest(env, 'GET', `/repos/${OWNER}/${REPO}/labels?per_page=100`)
+  return (arr ?? []).map((l: any) => ({ name: l.name, color: l.color }))
+}
+
+export async function createLabel(env: Env, input: { name?: string; color?: string }): Promise<Label> {
+  const name = (input?.name ?? '').trim()
+  if (!name) throw new ApiError('ラベル名を入力してください', 400)
+  const l = await ghRest(env, 'POST', `/repos/${OWNER}/${REPO}/labels`, {
+    name,
+    color: normalizeColor(input?.color),
+  })
+  return { name: l.name, color: l.color }
+}
+
+export async function renameLabel(
+  env: Env,
+  name: string,
+  input: { newName?: string; color?: string },
+): Promise<Label> {
+  const body: Record<string, unknown> = {}
+  if (typeof input?.newName === 'string' && input.newName.trim()) body.new_name = input.newName.trim()
+  if (input?.color !== undefined) body.color = normalizeColor(input.color)
+  if (Object.keys(body).length === 0) throw new ApiError('変更内容がありません', 400)
+  const l = await ghRest(
+    env,
+    'PATCH',
+    `/repos/${OWNER}/${REPO}/labels/${encodeURIComponent(name)}`,
+    body,
+  )
+  return { name: l.name, color: l.color }
+}
+
+export async function deleteLabel(env: Env, name: string): Promise<void> {
+  await ghRest(env, 'DELETE', `/repos/${OWNER}/${REPO}/labels/${encodeURIComponent(name)}`)
 }
