@@ -1,14 +1,50 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#5b8cff"/>
-      <stop offset="1" stop-color="#36d399"/>
+      <stop offset="0.52" stop-color="#37a7c6"/>
+      <stop offset="1" stop-color="#33d08f"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.26" cy="0.2" r="0.95">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.4"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="shade" cx="0.82" cy="0.92" r="0.85">
+      <stop offset="0" stop-color="#05132a" stop-opacity="0.22"/>
+      <stop offset="0.65" stop-color="#05132a" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="check" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#37e08a"/>
+      <stop offset="1" stop-color="#16ab63"/>
+    </linearGradient>
+    <linearGradient id="cardTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef3fb"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="112" fill="url(#g)"/>
-  <rect x="120" y="150" width="80" height="80" rx="20" fill="#ffffff"/>
-  <path d="M141 190 l16 16 l30 -34" fill="none" stroke="#0b1020" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
-  <rect x="232" y="170" width="170" height="22" rx="11" fill="#ffffff" opacity="0.95"/>
-  <rect x="120" y="300" width="80" height="80" rx="20" fill="#ffffff" opacity="0.55"/>
-  <rect x="232" y="320" width="170" height="22" rx="11" fill="#ffffff" opacity="0.55"/>
+
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="116" fill="url(#glow)"/>
+  <rect width="512" height="512" rx="116" fill="url(#shade)"/>
+  <!-- glassy inner rim -->
+  <rect x="5" y="5" width="502" height="502" rx="112" fill="none" stroke="#ffffff" stroke-opacity="0.16" stroke-width="3"/>
+
+  <!-- depth: a faded card behind -->
+  <g transform="rotate(-9 256 250)" opacity="0.5">
+    <rect x="162" y="118" width="196" height="120" rx="26" fill="#ffffff"/>
+  </g>
+
+  <!-- front card: shadow + card -->
+  <rect x="132" y="180" width="248" height="186" rx="36" fill="#06132b" opacity="0.20"/>
+  <rect x="134" y="168" width="244" height="186" rx="34" fill="url(#cardTop)"/>
+
+  <!-- completed task row -->
+  <circle cx="192" cy="224" r="33" fill="url(#check)"/>
+  <path d="M176 224 l11 12 l22 -25" fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="244" y="212" width="98" height="18" rx="9" fill="#16213c" opacity="0.85"/>
+  <rect x="244" y="240" width="64" height="14" rx="7" fill="#16213c" opacity="0.3"/>
+
+  <!-- pending task row -->
+  <rect x="161" y="296" width="26" height="26" rx="8" fill="#16213c" opacity="0.16"/>
+  <rect x="203" y="300" width="139" height="17" rx="8" fill="#16213c" opacity="0.5"/>
 </svg>
