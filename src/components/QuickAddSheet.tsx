@@ -5,7 +5,7 @@ import { Input, Label } from './ui/Input'
 import { Select } from './ui/Select'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
-import { LabelFilterChips } from './LabelFilterChips'
+import { LabelToggleChips } from './LabelToggleChips'
 import { useToast } from './ui/Toast'
 import { useBoard } from '../context/BoardContext'
 import { STATUS_ORDER } from '../lib/status'
@@ -24,7 +24,7 @@ export function QuickAddSheet({
   const board = useBoard()
   const toast = useToast()
   const [title, setTitle] = useState('')
-  const [label, setLabel] = useState<string | null>(null)
+  const [labels, setLabels] = useState<string[]>([])
   const [status, setStatus] = useState<Status>('Backlog')
   const [busy, setBusy] = useState(false)
 
@@ -32,26 +32,22 @@ export function QuickAddSheet({
   useEffect(() => {
     if (open) {
       setTitle('')
-      setLabel(null)
+      setLabels([])
       setStatus(initialStatus)
     }
   }, [open, initialStatus])
 
-  const reset = () => {
-    setTitle('')
-    setLabel(null)
-    setStatus(initialStatus)
-  }
+  const toggleLabel = (name: string) =>
+    setLabels((s) => (s.includes(name) ? s.filter((n) => n !== name) : [...s, name]))
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || busy) return
     setBusy(true)
     try {
-      await board.addTask({ title: title.trim(), status, label: label ?? undefined })
+      await board.addTask({ title: title.trim(), status, labels })
       haptic(12)
       toast({ variant: 'success', title: '追加しました' })
-      reset()
       onClose()
     } catch (e) {
       toast({ variant: 'error', title: '追加に失敗', description: errMsg(e) })
@@ -80,13 +76,8 @@ export function QuickAddSheet({
             />
           </div>
           <div>
-            <Label>ラベル（任意）</Label>
-            <LabelFilterChips
-              value={label}
-              onChange={setLabel}
-              includeAll={false}
-              labels={board.labels}
-            />
+            <Label>ラベル（任意・複数可）</Label>
+            <LabelToggleChips selected={labels} onToggle={toggleLabel} labels={board.labels} />
           </div>
           <div>
             <Label htmlFor="qa-status">ステータス</Label>

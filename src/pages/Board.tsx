@@ -17,6 +17,7 @@ import { LabelFilterChips } from '../components/LabelFilterChips'
 import { StatusColumn } from '../components/StatusColumn'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { QuickAddSheet } from '../components/QuickAddSheet'
+import { LabelQuickSheet } from '../components/LabelQuickSheet'
 import { TaskCardView } from '../components/TaskCardView'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
@@ -27,6 +28,7 @@ export function Board() {
   const board = useBoard()
   const [picker, setPicker] = useState<Task | null>(null)
   const [addStatus, setAddStatus] = useState<Status | null>(null)
+  const [labelTarget, setLabelTarget] = useState<Task | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
   // Long-press to drag on touch (so quick swipes still scroll the board/columns);
@@ -95,6 +97,7 @@ export function Board() {
               status={s}
               tasks={board.byStatus[s]}
               onStatusTap={setPicker}
+              onLabelTap={setLabelTarget}
               onAdd={setAddStatus}
             />
           ))}
@@ -108,6 +111,7 @@ export function Board() {
       </DndContext>
 
       <StatusPickerSheet task={picker} onClose={() => setPicker(null)} onPick={pick} />
+      <LabelQuickSheet task={labelTarget} onClose={() => setLabelTarget(null)} />
       <QuickAddSheet
         open={addStatus !== null}
         initialStatus={addStatus ?? 'Backlog'}

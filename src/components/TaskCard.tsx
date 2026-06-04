@@ -4,7 +4,15 @@ import type { Task } from '../lib/types'
 import { TaskCardView } from './TaskCardView'
 
 /** Draggable task card. Long-press to pick up (so quick swipes still scroll). */
-export function TaskCard({ task, onStatusTap }: { task: Task; onStatusTap: (t: Task) => void }) {
+export function TaskCard({
+  task,
+  onStatusTap,
+  onLabelTap,
+}: {
+  task: Task
+  onStatusTap: (t: Task) => void
+  onLabelTap: (t: Task) => void
+}) {
   const navigate = useNavigate()
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `task-${task.number}`,
@@ -16,6 +24,7 @@ export function TaskCard({ task, onStatusTap }: { task: Task; onStatusTap: (t: T
       ref={setNodeRef}
       task={task}
       onStatusTap={onStatusTap}
+      onLabelTap={onLabelTap}
       onOpen={() => navigate(`/t/${task.number}`)}
       dragging={isDragging}
       {...attributes}

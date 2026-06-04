@@ -32,7 +32,7 @@ export interface Comment {
 export interface NewTask {
   title: string
   status: Status
-  label?: string
+  labels?: string[]
   body?: string
 }
 

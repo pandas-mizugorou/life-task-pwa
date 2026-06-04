@@ -64,7 +64,7 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
     return { task: await github.createTask(env, b) }
   }
 
-  const mm = p.match(/^\/api\/tasks\/(\d+)(\/status|\/comments|\/item)?$/)
+  const mm = p.match(/^\/api\/tasks\/(\d+)(\/status|\/comments|\/item|\/labels)?$/)
   if (mm) {
     const number = parseInt(mm[1], 10)
     const sub = mm[2]
@@ -72,6 +72,10 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
     if (!sub && m === 'PATCH') {
       const b = (await request.json()) as any
       return { task: await github.patchTask(env, number, b) }
+    }
+    if (sub === '/labels' && m === 'PUT') {
+      const b = (await request.json()) as any
+      return { task: await github.setTaskLabels(env, number, b?.labels) }
     }
     if (sub === '/status' && m === 'PATCH') {
       const b = (await request.json()) as any
@@ -107,7 +111,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   }
   return {
     'Access-Control-Allow-Origin': allowOrigin,
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-App-Key',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',

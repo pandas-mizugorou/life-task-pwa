@@ -80,6 +80,9 @@ export const addComment = (n: number, body: string) =>
 export const removeFromBoard = (n: number) =>
   call<{ ok: true }>(`/api/tasks/${n}/item`, { method: 'DELETE' })
 
+export const setTaskLabels = (n: number, labels: string[]) =>
+  call<{ task: Task }>(`/api/tasks/${n}/labels`, { method: 'PUT', body: JSON.stringify({ labels }) })
+
 // ---- labels ----
 export const getLabels = () => call<{ labels: Label[] }>('/api/labels')
 

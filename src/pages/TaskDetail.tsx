@@ -14,7 +14,7 @@ import { Button } from '../components/ui/Button'
 import { Input, Label, Textarea } from '../components/ui/Input'
 import { FullSpinner, Spinner } from '../components/ui/Spinner'
 import { ErrorState } from '../components/ui/States'
-import { LabelChip } from '../components/LabelChip'
+import { LabelToggleChips } from '../components/LabelToggleChips'
 import { CommentList } from '../components/CommentList'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { useToast } from '../components/ui/Toast'
@@ -78,6 +78,20 @@ export function TaskDetail() {
     } catch (e) {
       setTask(prev)
       toast({ variant: 'error', title: 'ステータス変更に失敗', description: errMsg(e) })
+    }
+  }
+
+  const toggleLabel = async (name: string) => {
+    const selected = task.labels.map((l) => l.name)
+    const next = selected.includes(name) ? selected.filter((n) => n !== name) : [...selected, name]
+    const prev = task
+    const objs = next.map((n) => board.labels.find((l) => l.name === n) ?? { name: n, color: '8b97b8' })
+    setTask({ ...task, labels: objs })
+    try {
+      const updated = await board.setTaskLabels(task.number, next)
+      setTask(updated)
+    } catch {
+      setTask(prev) // board.setTaskLabels already showed a toast
     }
   }
 
@@ -211,9 +225,6 @@ export function TaskDetail() {
               >
                 {meta.label}
               </button>
-              {task.labels.map((l) => (
-                <LabelChip key={l.name} label={l} />
-              ))}
               {task.state === 'CLOSED' && (
                 <span className="rounded-full bg-bad/15 px-2 py-0.5 text-[11px] font-semibold text-bad">
                   クローズ済み
@@ -227,6 +238,14 @@ export function TaskDetail() {
             ) : (
               <p className="mt-3 text-sm text-sub/60">本文なし</p>
             )}
+            <div className="mt-4 border-t border-line/60 pt-3">
+              <div className="mb-2 text-[13px] font-semibold text-sub">ラベル</div>
+              <LabelToggleChips
+                selected={task.labels.map((l) => l.name)}
+                onToggle={toggleLabel}
+                labels={board.labels}
+              />
+            </div>
           </div>
         )}
       </Card>

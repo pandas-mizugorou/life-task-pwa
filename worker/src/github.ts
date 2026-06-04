@@ -84,7 +84,7 @@ async function ghGraphQL<T = unknown>(
 
 async function ghRest(
   env: Env,
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
 ): Promise<any> {
@@ -203,19 +203,21 @@ export async function getTaskDetail(env: Env, number: number): Promise<{ task: T
 
 export async function createTask(
   env: Env,
-  input: { title?: string; status?: string; label?: string; body?: string },
+  input: { title?: string; status?: string; labels?: string[]; body?: string },
 ): Promise<Task> {
   const title = (input?.title ?? '').trim()
   if (!title) throw new ApiError('タイトルを入力してください', 400)
   const status: Status = isStatus(input?.status) ? input.status : 'Backlog'
-  const label = input?.label
+  const labels = Array.isArray(input?.labels)
+    ? input.labels.filter((x): x is string => typeof x === 'string')
+    : []
   const body = typeof input?.body === 'string' ? input.body : undefined
 
-  // 1. create the issue (REST), with the label on the issue (the board mirrors it)
+  // 1. create the issue (REST), with labels on the issue (the board mirrors them)
   const issue = await ghRest(env, 'POST', `/repos/${OWNER}/${REPO}/issues`, {
     title,
     body,
-    labels: label ? [label] : [],
+    labels,
   })
   // 2. add it to the board
   const add = await ghGraphQL<any>(env, ADD_ITEM_MUTATION, { project: PROJECT_ID, content: issue.node_id })
@@ -288,6 +290,17 @@ export async function addComment(env: Env, number: number, bodyText: unknown): P
   if (!text) throw new ApiError('コメントが空です', 400)
   const c = await ghRest(env, 'POST', `/repos/${OWNER}/${REPO}/issues/${number}/comments`, { body: text })
   return { id: String(c.id), author: c.user?.login ?? '', body: c.body, createdAt: c.created_at }
+}
+
+/** Replace the full set of labels on an issue (the board mirrors issue labels). */
+export async function setTaskLabels(env: Env, number: number, labels: unknown): Promise<Task> {
+  if (!Array.isArray(labels) || labels.some((l) => typeof l !== 'string')) {
+    throw new ApiError('labels が不正です', 400)
+  }
+  await ghRest(env, 'PUT', `/repos/${OWNER}/${REPO}/issues/${number}/labels`, { labels })
+  const raw = await fetchIssue(env, number)
+  if (!raw) throw new ApiError(`Issue #${number} が見つかりません`, 404)
+  return raw.task
 }
 
 export async function removeFromBoard(env: Env, number: number): Promise<void> {

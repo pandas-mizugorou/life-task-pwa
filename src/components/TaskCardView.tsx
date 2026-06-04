@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { MessageSquare } from 'lucide-react'
+import { MessageSquare, Tag } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { STATUS_META } from '../lib/status'
 import type { Task } from '../lib/types'
@@ -8,13 +8,14 @@ import { LabelChip } from './LabelChip'
 interface Props extends React.HTMLAttributes<HTMLDivElement> {
   task: Task
   onStatusTap?: (t: Task) => void
+  onLabelTap?: (t: Task) => void
   onOpen?: () => void
   dragging?: boolean
 }
 
 /** Presentational task card. Used directly inside columns and in the DragOverlay. */
 export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardView(
-  { task, onStatusTap, onOpen, dragging, className, ...rest },
+  { task, onStatusTap, onLabelTap, onOpen, dragging, className, ...rest },
   ref,
 ) {
   const meta = STATUS_META[task.status]
@@ -40,6 +41,19 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
       <div className="min-w-0 flex-1">
         <div className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{task.title}</div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {onLabelTap && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                onLabelTap(task)
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className="inline-flex items-center rounded-full border border-line px-1.5 py-0.5 text-sub transition hover:border-accent/60 hover:text-ink"
+              aria-label="ラベルを付ける"
+            >
+              <Tag className="h-3 w-3" />
+            </button>
+          )}
           {task.labels.map((l) => (
             <LabelChip key={l.name} label={l} />
           ))}

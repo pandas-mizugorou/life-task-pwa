@@ -10,11 +10,13 @@ export function StatusColumn({
   status,
   tasks,
   onStatusTap,
+  onLabelTap,
   onAdd,
 }: {
   status: Status
   tasks: Task[]
   onStatusTap: (t: Task) => void
+  onLabelTap: (t: Task) => void
   onAdd: (status: Status) => void
 }) {
   const meta = STATUS_META[status]
@@ -44,7 +46,9 @@ export function StatusColumn({
         )}
       >
         {tasks.length ? (
-          tasks.map((t) => <TaskCard key={t.number} task={t} onStatusTap={onStatusTap} />)
+          tasks.map((t) => (
+            <TaskCard key={t.number} task={t} onStatusTap={onStatusTap} onLabelTap={onLabelTap} />
+          ))
         ) : (
           <p className="px-1 pt-1.5 text-xs text-sub/50">なし</p>
         )}

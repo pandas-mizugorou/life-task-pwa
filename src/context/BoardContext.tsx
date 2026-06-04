@@ -27,6 +27,7 @@ interface BoardValue {
   createLabel: (name: string, color: string) => Promise<void>
   renameLabel: (name: string, patch: { newName?: string; color?: string }) => Promise<void>
   deleteLabel: (name: string) => Promise<void>
+  setTaskLabels: (number: number, labels: string[]) => Promise<Task>
 }
 
 const Ctx = createContext<BoardValue | null>(null)
@@ -102,6 +103,25 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
       }
     },
     [toast],
+  )
+
+  const setTaskLabels = useCallback(
+    async (number: number, names: string[]) => {
+      const prev = tasksRef.current
+      const objs = names.map((n) => labels.find((l) => l.name === n) ?? { name: n, color: '8b97b8' })
+      setTasks((ts) => ts.map((t) => (t.number === number ? { ...t, labels: objs } : t)))
+      haptic(8)
+      try {
+        const { task } = await api.setTaskLabels(number, names)
+        setTasks((ts) => ts.map((t) => (t.number === number ? task : t)))
+        return task
+      } catch (e) {
+        setTasks(prev) // rollback
+        toast({ variant: 'error', title: 'ラベル更新に失敗', description: errMsg(e) })
+        throw e
+      }
+    },
+    [toast, labels],
   )
 
   const addTask = useCallback(async (input: NewTask) => {
@@ -197,6 +217,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         createLabel,
         renameLabel,
         deleteLabel,
+        setTaskLabels,
       }}
     >
       {children}
