@@ -1,9 +1,11 @@
+import { useDroppable } from '@dnd-kit/core'
 import { Plus } from 'lucide-react'
+import { cn } from '../lib/cn'
 import { STATUS_META } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 import { TaskCard } from './TaskCard'
 
-/** A single kanban column: header (with a + to add into this status) + scrolling list. */
+/** A kanban column: header (with + to add into this status) + droppable scrolling list. */
 export function StatusColumn({
   status,
   tasks,
@@ -16,6 +18,8 @@ export function StatusColumn({
   onAdd: (status: Status) => void
 }) {
   const meta = STATUS_META[status]
+  const { setNodeRef, isOver } = useDroppable({ id: status })
+
   return (
     <section className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col">
       <div className="mb-2 flex items-center gap-2 px-1">
@@ -32,7 +36,13 @@ export function StatusColumn({
           <Plus className="h-4 w-4" />
         </button>
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl bg-panel2/30 p-2 pb-4">
+      <div
+        ref={setNodeRef}
+        className={cn(
+          'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl border-2 border-transparent bg-panel2/30 p-2 pb-4 transition-colors',
+          isOver && 'border-accent2/50 bg-accent2/10',
+        )}
+      >
         {tasks.length ? (
           tasks.map((t) => <TaskCard key={t.number} task={t} onStatusTap={onStatusTap} />)
         ) : (
