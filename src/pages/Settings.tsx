@@ -110,7 +110,7 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
             操作は<span className="font-semibold text-ink">実際の GitHub に即反映</span>されます（ローカルにコピーは持ちません）。
           </li>
           <li>
-            <span className="font-semibold text-ink">削除はありません</span>。「完了にする」＝Issue をクローズ、「ボードから外す」＝ボードから取り除くだけ（Issue は残る）。完全削除は github.com で行います。
+            <span className="font-semibold text-ink">完了にする</span>＝やり終えたとき（完了として記録、ボードから消える）。<span className="font-semibold text-ink">ボードから外す</span>＝やらないことにしたとき（完了にせず消す、タスクは残る）。どちらも GitHub に残り、完全削除は github.com で。
           </li>
           <li>
             完了したタスクは既定で非表示です。上の<span className="font-semibold text-ink">「完了したタスクも表示」</span>を ON にすると Done 列に出ます。

@@ -118,7 +118,7 @@ export function TaskDetail() {
       const { task: updated } = await api.patchTask(number, { state: closing ? 'closed' : 'open' })
       setTask(updated)
       board.updateTaskLocal(updated) // keep in cache; the board hides/shows it per the 完了表示 toggle
-      toast({ variant: 'success', title: closing ? '完了にしました' : '再開しました' })
+      toast({ variant: 'success', title: closing ? '完了にしました' : '未完了に戻しました' })
     } catch (e) {
       toast({ variant: 'error', title: '失敗しました', description: errMsg(e) })
     } finally {
@@ -127,7 +127,12 @@ export function TaskDetail() {
   }
 
   const removeItem = async () => {
-    if (!window.confirm('このタスクをボードから外しますか？（Issue は GitHub に残ります）')) return
+    if (
+      !window.confirm(
+        'このタスクを「完了にせず」ボードから外しますか？\n（やらないことにした等。タスクは GitHub に残り、あとで戻せます）',
+      )
+    )
+      return
     setActing(true)
     try {
       await api.removeFromBoard(number)
@@ -255,35 +260,44 @@ export function TaskDetail() {
         <CommentList comments={comments} onAdd={addCmt} />
       </Card>
 
-      <div>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            variant={task.state === 'OPEN' ? 'secondary' : 'primary'}
-            onClick={toggleClose}
-            disabled={acting}
-          >
-            {task.state === 'OPEN' ? (
-              <>
-                <CheckCircle2 className="h-4 w-4" />
-                完了にする
-              </>
-            ) : (
-              <>
-                <RotateCcw className="h-4 w-4" />
-                再開する
-              </>
-            )}
-          </Button>
-          <Button variant="danger" onClick={removeItem} disabled={acting}>
-            <Trash2 className="h-4 w-4" />
-            ボードから外す
-          </Button>
+      {task.state === 'OPEN' ? (
+        <div className="space-y-3">
+          <div>
+            <Button variant="primary" className="w-full" onClick={toggleClose} disabled={acting}>
+              <CheckCircle2 className="h-4 w-4" />
+              完了にする
+            </Button>
+            <p className="mt-1.5 px-1 text-xs leading-relaxed text-sub">
+              <span className="font-semibold text-ink">やり終えたとき。</span>
+              完了として記録され、ボードから消えます（GitHub に履歴は残るので後から見返せます）。
+            </p>
+          </div>
+          <div className="border-t border-line/50 pt-3">
+            <button
+              onClick={removeItem}
+              disabled={acting}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-bad transition hover:opacity-80 disabled:opacity-50"
+            >
+              <Trash2 className="h-4 w-4" />
+              ボードから外す
+            </button>
+            <p className="mt-1.5 px-1 text-xs leading-relaxed text-sub">
+              <span className="font-semibold text-ink">やらない／ここで管理しないとき。</span>
+              完了にはせず、ボードのカードだけ消します（タスク自体は GitHub に残るので、あとで戻せます）。
+            </p>
+          </div>
         </div>
-        <p className="mt-2 text-xs leading-relaxed text-sub/80">
-          「完了にする」は Issue をクローズ（履歴は残ります）。「ボードから外す」はボードから取り除くだけで Issue は残ります。
-          <span className="font-semibold text-sub">アプリから Issue の完全削除は行いません</span>（必要なら github.com で削除）。
-        </p>
-      </div>
+      ) : (
+        <div>
+          <Button variant="primary" className="w-full" onClick={toggleClose} disabled={acting}>
+            <RotateCcw className="h-4 w-4" />
+            未完了に戻す
+          </Button>
+          <p className="mt-1.5 px-1 text-xs leading-relaxed text-sub">
+            完了を取り消して、もう一度ボードに表示します。
+          </p>
+        </div>
+      )}
 
       <StatusPickerSheet
         task={picker ? task : null}
