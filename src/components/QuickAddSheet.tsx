@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Sheet, SheetContent } from './ui/Sheet'
 import { Input, Label } from './ui/Input'
@@ -12,7 +12,15 @@ import { STATUS_ORDER } from '../lib/status'
 import { errMsg, haptic } from '../lib/haptics'
 import type { Status } from '../lib/types'
 
-export function QuickAddSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function QuickAddSheet({
+  open,
+  onClose,
+  initialStatus = 'Backlog',
+}: {
+  open: boolean
+  onClose: () => void
+  initialStatus?: Status
+}) {
   const board = useBoard()
   const toast = useToast()
   const [title, setTitle] = useState('')
@@ -20,10 +28,19 @@ export function QuickAddSheet({ open, onClose }: { open: boolean; onClose: () =>
   const [status, setStatus] = useState<Status>('Backlog')
   const [busy, setBusy] = useState(false)
 
+  // Start each open fresh, with the status of the column that triggered it.
+  useEffect(() => {
+    if (open) {
+      setTitle('')
+      setLabel(null)
+      setStatus(initialStatus)
+    }
+  }, [open, initialStatus])
+
   const reset = () => {
     setTitle('')
     setLabel(null)
-    setStatus('Backlog')
+    setStatus(initialStatus)
   }
 
   const submit = async (e: React.FormEvent) => {

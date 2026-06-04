@@ -20,10 +20,10 @@ export function TaskCard({ task, onStatusTap }: { task: Task; onStatusTap: (t: T
           open()
         }
       }}
-      className="fa-card flex cursor-pointer items-start gap-2 rounded-2xl border border-line bg-panel p-3.5 transition hover:border-accent/40 active:scale-[0.99]"
+      className="fa-card flex cursor-pointer items-start gap-2 rounded-2xl border border-line bg-panel p-3 transition hover:border-accent/40 active:scale-[0.99]"
     >
       <div className="min-w-0 flex-1">
-        <div className="line-clamp-2 font-semibold leading-snug text-ink">{task.title}</div>
+        <div className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{task.title}</div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {task.labels.map((l) => (
             <LabelChip key={l.name} label={l} />

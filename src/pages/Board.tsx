@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
 import { useBoard } from '../context/BoardContext'
 import { FullSpinner } from '../components/ui/Spinner'
-import { EmptyState, ErrorState } from '../components/ui/States'
+import { ErrorState } from '../components/ui/States'
 import { LabelFilterChips } from '../components/LabelFilterChips'
 import { StatusColumn } from '../components/StatusColumn'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
@@ -13,7 +12,7 @@ import type { Status, Task } from '../lib/types'
 export function Board() {
   const board = useBoard()
   const [picker, setPicker] = useState<Task | null>(null)
-  const [adding, setAdding] = useState(false)
+  const [addStatus, setAddStatus] = useState<Status | null>(null)
 
   if (board.loading && board.tasks.length === 0) return <FullSpinner label="ボードを読み込み中…" />
   if (board.error && board.tasks.length === 0)
@@ -32,38 +31,26 @@ export function Board() {
         <LabelFilterChips value={board.labelFilter} onChange={board.setLabelFilter} />
       </div>
 
-      {board.total === 0 ? (
-        <div className="flex min-h-0 flex-1 items-center justify-center">
-          <EmptyState
-            title="タスクがありません"
-            description={
-              board.labelFilter
-                ? 'このラベルの未完了タスクはありません。'
-                : '右下の＋ボタンから追加できます。'
-            }
+      {/* Horizontal kanban: swipe between status columns; each column scrolls vertically
+          and has its own + (in the header) to add a task directly into that status. */}
+      <div className="flex min-h-0 flex-1 snap-x snap-proximity gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3">
+        {STATUS_ORDER.map((s) => (
+          <StatusColumn
+            key={s}
+            status={s}
+            tasks={board.byStatus[s]}
+            onStatusTap={setPicker}
+            onAdd={setAddStatus}
           />
-        </div>
-      ) : (
-        // Horizontal kanban: columns side by side, swipe to scroll (snap per column);
-        // each column scrolls vertically on its own.
-        <div className="flex min-h-0 flex-1 snap-x snap-mandatory gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3">
-          {STATUS_ORDER.map((s) => (
-            <StatusColumn key={s} status={s} tasks={board.byStatus[s]} onStatusTap={setPicker} />
-          ))}
-        </div>
-      )}
-
-      <button
-        onClick={() => setAdding(true)}
-        className="bg-grad fixed right-5 z-30 grid h-14 w-14 place-items-center rounded-full text-heroink shadow-xl shadow-accent/30 transition active:scale-95"
-        style={{ bottom: 'calc(env(safe-area-inset-bottom) + 72px)' }}
-        aria-label="タスクを追加"
-      >
-        <Plus className="h-7 w-7" />
-      </button>
+        ))}
+      </div>
 
       <StatusPickerSheet task={picker} onClose={() => setPicker(null)} onPick={pick} />
-      <QuickAddSheet open={adding} onClose={() => setAdding(false)} />
+      <QuickAddSheet
+        open={addStatus !== null}
+        initialStatus={addStatus ?? 'Backlog'}
+        onClose={() => setAddStatus(null)}
+      />
     </div>
   )
 }
