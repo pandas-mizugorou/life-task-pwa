@@ -1,4 +1,5 @@
 import * as RD from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
 import { cn } from '../../lib/cn'
 
 /** Bottom sheet (mobile-first) built on Radix Dialog. */
@@ -27,14 +28,30 @@ export function SheetContent({
         )}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 18px)' }}
       >
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-line" aria-hidden />
-        <RD.Title className="text-lg font-bold text-ink">{title}</RD.Title>
-        {description ? (
-          <RD.Description className="mt-1 line-clamp-2 text-sm text-sub">{description}</RD.Description>
-        ) : (
-          <RD.Description className="sr-only">{title}</RD.Description>
-        )}
-        <div className="mt-4">{children}</div>
+        {/* Dismiss by tapping the handle, the X, or outside the sheet. */}
+        <RD.Close
+          aria-label="閉じる"
+          className="mx-auto mb-3 block h-1.5 w-12 rounded-full bg-line transition hover:bg-sub"
+        />
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <RD.Title className="text-lg font-bold text-ink">{title}</RD.Title>
+            {description ? (
+              <RD.Description className="mt-1 line-clamp-2 text-sm text-sub">
+                {description}
+              </RD.Description>
+            ) : (
+              <RD.Description className="sr-only">{title}</RD.Description>
+            )}
+          </div>
+          <RD.Close
+            aria-label="閉じる"
+            className="-mr-1 shrink-0 rounded-lg p-1.5 text-sub transition hover:bg-panel2 hover:text-ink"
+          >
+            <X className="h-5 w-5" />
+          </RD.Close>
+        </div>
+        {children}
       </RD.Content>
     </RD.Portal>
   )
