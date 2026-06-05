@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { RefreshCw } from 'lucide-react'
 import {
   DndContext,
   DragOverlay,
@@ -26,6 +27,7 @@ import { LabelQuickSheet } from '../components/LabelQuickSheet'
 import { TaskCardView } from '../components/TaskCardView'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
+import { usePullToRefresh } from '../lib/usePullToRefresh'
 import { ACTIVE_STATUSES } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 
@@ -51,6 +53,10 @@ export function Board() {
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
   )
+
+  // Pull down (when a column is at the top) to refresh; disabled while dragging a card.
+  const boardRef = useRef<HTMLDivElement>(null)
+  const { pull, refreshing } = usePullToRefresh(boardRef, board.refresh, activeTask !== null)
 
   if (board.loading && board.tasks.length === 0) return <FullSpinner label="ボードを読み込み中…" />
   if (board.error && board.tasks.length === 0)
@@ -173,7 +179,23 @@ export function Board() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div ref={boardRef} className="relative flex h-full flex-col">
+      {(pull > 0 || refreshing) && (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center"
+          style={{
+            transform: `translateY(${refreshing ? 20 : Math.min(pull, 96) - 30}px)`,
+            opacity: refreshing ? 1 : Math.min(pull / 40, 1),
+          }}
+        >
+          <div className="mt-1 rounded-full border border-line bg-panel2 p-2 shadow-lg">
+            <RefreshCw
+              className={cn('h-4 w-4 text-accent2', refreshing && 'animate-spin')}
+              style={refreshing ? undefined : { transform: `rotate(${pull * 4}deg)` }}
+            />
+          </div>
+        </div>
+      )}
       <div className="shrink-0 px-4 pt-4">
         <LabelFilterChips
           value={board.labelFilter}

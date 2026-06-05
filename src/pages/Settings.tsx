@@ -121,9 +121,6 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
             タスクを<span className="font-semibold text-ink">完全に削除する機能はありません</span>（GitHub の仕様）。どうしても消したいときは github.com で削除してください。
           </li>
           <li>
-            完了したタスクはふだん表示されません。見たいときは、上の<span className="font-semibold text-ink">「完了したタスクも表示」</span>を ON にすると、右端の「完了済み」列に出ます。
-          </li>
-          <li>
             PC など別の場所で変更したときは、<span className="font-semibold text-ink">右上の更新ボタン</span>を押すか、アプリを開き直すと最新になります（自動では即時に反映されません）。
           </li>
           <li>

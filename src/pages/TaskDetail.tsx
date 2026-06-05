@@ -18,6 +18,7 @@ import { LabelToggleChips } from '../components/LabelToggleChips'
 import { CommentList } from '../components/CommentList'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { useToast } from '../components/ui/Toast'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { useBoard } from '../context/BoardContext'
 import * as api from '../lib/api'
 import { STATUS_META } from '../lib/status'
@@ -41,6 +42,7 @@ export function TaskDetail() {
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
   const [acting, setActing] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   const load = useCallback(() => {
     setLoading(true)
@@ -145,12 +147,6 @@ export function TaskDetail() {
   }
 
   const removeItem = async () => {
-    if (
-      !window.confirm(
-        'このタスクを「完了にせず」ボードから外しますか？\n（やらないことにした等。タスクは GitHub に残り、あとで戻せます）',
-      )
-    )
-      return
     setActing(true)
     try {
       await api.removeFromBoard(number)
@@ -243,8 +239,9 @@ export function TaskDetail() {
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <button
                 onClick={() => setPicker(true)}
-                className="rounded-full px-2.5 py-1 text-[12px] font-bold"
+                className="relative rounded-full px-3 py-1.5 text-[12px] font-bold before:absolute before:-inset-2 before:content-['']"
                 style={{ background: meta.tint, color: meta.dot }}
+                aria-label={`ステータス: ${meta.label}（タップで変更）`}
               >
                 {meta.label}
               </button>
@@ -292,7 +289,7 @@ export function TaskDetail() {
           </div>
           <div className="border-t border-line/50 pt-3">
             <button
-              onClick={removeItem}
+              onClick={() => setConfirmRemove(true)}
               disabled={acting}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-bad transition hover:opacity-80 disabled:opacity-50"
             >
@@ -321,6 +318,15 @@ export function TaskDetail() {
         task={picker ? task : null}
         onClose={() => setPicker(false)}
         onPick={pickStatus}
+      />
+      <ConfirmDialog
+        open={confirmRemove}
+        onOpenChange={setConfirmRemove}
+        title="ボードから外しますか？"
+        description="完了にはせず、ボードのカードだけ消します。タスク自体は GitHub に残るので、あとで戻せます。"
+        confirmLabel="ボードから外す"
+        destructive
+        onConfirm={removeItem}
       />
     </div>
   )

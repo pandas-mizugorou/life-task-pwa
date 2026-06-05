@@ -6,6 +6,7 @@ import { Card } from '../components/ui/Card'
 import { Input, Label as FieldLabel } from '../components/ui/Input'
 import { Spinner } from '../components/ui/Spinner'
 import { Sheet, SheetContent } from '../components/ui/Sheet'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { LabelChip } from '../components/LabelChip'
 import { useToast } from '../components/ui/Toast'
 import { useBoard } from '../context/BoardContext'
@@ -24,6 +25,7 @@ export function LabelManager() {
   const [name, setName] = useState('')
   const [color, setColor] = useState(LABEL_COLORS[0])
   const [busy, setBusy] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const openCreate = () => {
     setName('')
@@ -58,12 +60,6 @@ export function LabelManager() {
 
   const remove = async () => {
     if (!editor || editor.mode !== 'edit' || busy) return
-    if (
-      !window.confirm(
-        `ラベル「${editor.original}」を削除しますか？\n各 Issue からこのラベルが外れます（Issue 自体は残ります）。`,
-      )
-    )
-      return
     setBusy(true)
     try {
       await board.deleteLabel(editor.original)
@@ -165,7 +161,7 @@ export function LabelManager() {
                   {busy ? <Spinner className="h-5 w-5" /> : '保存'}
                 </Button>
                 {editor.mode === 'edit' && (
-                  <Button variant="danger" onClick={remove} disabled={busy}>
+                  <Button variant="danger" onClick={() => setConfirmDelete(true)} disabled={busy}>
                     <Trash2 className="h-4 w-4" />
                     削除
                   </Button>
@@ -175,6 +171,20 @@ export function LabelManager() {
           </SheetContent>
         )}
       </Sheet>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="ラベルを削除しますか？"
+        description={
+          editor && editor.mode === 'edit'
+            ? `「${editor.original}」を削除します。各 Issue からこのラベルが外れます（Issue 自体は残ります）。`
+            : undefined
+        }
+        confirmLabel="削除する"
+        destructive
+        onConfirm={remove}
+      />
     </div>
   )
 }

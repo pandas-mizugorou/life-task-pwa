@@ -59,7 +59,7 @@ export function StatusColumn({
         )}
       >
         {tasks.length === 0 && lineIndex == null && (
-          <p className="px-1 pt-1.5 text-xs text-sub">なし</p>
+          <p className="px-1 pt-1.5 text-xs text-sub">タスクなし</p>
         )}
         {tasks.map((t, i) => (
           <Fragment key={t.number}>

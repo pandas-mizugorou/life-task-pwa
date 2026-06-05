@@ -27,7 +27,7 @@ export function CompletedColumn({ tasks }: { tasks: Task[] }) {
             />
           ))
         ) : (
-          <p className="px-1 pt-1.5 text-xs text-sub">なし</p>
+          <p className="px-1 pt-1.5 text-xs text-sub">完了タスクなし</p>
         )}
       </div>
     </section>
