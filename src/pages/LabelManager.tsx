@@ -81,7 +81,7 @@ export function LabelManager() {
       <div className="flex items-center gap-2">
         <button
           onClick={() => navigate(-1)}
-          className="rounded-lg p-2 text-sub transition hover:bg-panel2 hover:text-ink"
+          className="rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
           aria-label="戻る"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -105,7 +105,7 @@ export function LabelManager() {
             <span className="min-w-0 flex-1 truncate text-sm text-sub">{l.name}</span>
             <button
               onClick={() => openEdit(l)}
-              className="rounded-lg p-2 text-sub transition hover:bg-panel2 hover:text-ink"
+              className="rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
               aria-label={`${l.name} を編集`}
             >
               <Pencil className="h-4 w-4" />
@@ -114,7 +114,7 @@ export function LabelManager() {
         ))}
       </div>
 
-      <p className="px-1 text-xs leading-relaxed text-sub/70">
+      <p className="px-1 text-xs leading-relaxed text-sub">
         ラベルは GitHub の life リポジトリに即反映されます。名称・色の変更や削除は、そのラベルが付いた全 Issue に反映されます。
       </p>
 

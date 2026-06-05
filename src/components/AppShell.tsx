@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ListChecks, RefreshCw, Settings as SettingsIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { NavLink } from 'react-router-dom'
@@ -12,6 +13,17 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { refresh, loading } = useBoard()
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
+  useEffect(() => {
+    const goOnline = () => setOnline(true)
+    const goOffline = () => setOnline(false)
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
+    return () => {
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
+    }
+  }, [])
   return (
     <div className="flex h-screen flex-col" style={{ height: '100dvh' }}>
       <header
@@ -30,13 +42,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               haptic(8)
               refresh()
             }}
-            className="ml-auto rounded-lg p-2 text-sub transition hover:bg-panel2 hover:text-ink"
+            className="ml-auto rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
             aria-label="更新"
           >
             <RefreshCw className={cn('h-5 w-5', loading && 'animate-spin')} />
           </button>
         </div>
       </header>
+
+      {!online && (
+        <div
+          role="status"
+          className="bg-warn/15 px-4 py-1.5 text-center text-xs font-semibold text-warn"
+        >
+          オフラインです — 変更は保存されません
+        </div>
+      )}
 
       {/* No scroll here — each page manages its own (Board = full-height kanban). */}
       <main className="min-h-0 flex-1 overflow-hidden">{children}</main>

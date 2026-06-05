@@ -29,7 +29,7 @@ export function LabelQuickSheet({ task, onClose }: { task: Task | null; onClose:
       {task && (
         <SheetContent title="ラベルを付ける" description={`#${task.number} ${task.title}`}>
           <LabelToggleChips selected={selected} onToggle={toggle} labels={board.labels} />
-          <p className="mt-3 text-xs leading-relaxed text-sub/70">
+          <p className="mt-3 text-xs leading-relaxed text-sub">
             タップで付け外し（即反映）。終わったら外側をタップで閉じます。
           </p>
         </SheetContent>

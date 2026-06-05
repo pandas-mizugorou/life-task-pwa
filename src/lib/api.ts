@@ -37,14 +37,23 @@ export function isConfigured(): boolean {
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const base = getWorkerUrl()
   if (!base) throw new ApiError('Worker URL が未設定です（設定画面で入力してください）', 0)
-  const res = await fetch(base + path, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-App-Key': getKey(),
-      ...(init?.headers ?? {}),
-    },
-  })
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw new ApiError('オフラインです。電波の良い場所で、もう一度お試しください。', 0)
+  }
+  let res: Response
+  try {
+    res = await fetch(base + path, {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-App-Key': getKey(),
+        ...(init?.headers ?? {}),
+      },
+    })
+  } catch {
+    // fetch rejects on network failure (offline, DNS, server unreachable, CORS block)
+    throw new ApiError('接続できませんでした。電波状況を確認して、もう一度お試しください。', 0)
+  }
   if (!res.ok) {
     let msg = `通信エラー (HTTP ${res.status})`
     try {

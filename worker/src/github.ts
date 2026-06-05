@@ -162,11 +162,33 @@ export async function getMeta(env: Env): Promise<Meta> {
   const data = await ghGraphQL<any>(env, META_QUERY, { project: PROJECT_ID })
   const field = data?.node?.field
   const statuses = (field?.options ?? []).map((o: any) => ({ name: o.name, optionId: o.id }))
+
+  // Drift detection: compare the LIVE Status field/options against the hardcoded
+  // ids this Worker writes with. If GitHub's ids no longer match (a Status option
+  // was recreated, renamed away, or added), surface it so drift is *detected* here
+  // instead of silently writing to the wrong column later.
+  const drift: string[] = []
+  const liveById = new Map<string, string>(
+    statuses.map((s: any): [string, string] => [s.name, s.optionId]),
+  )
+  for (const name of STATUS_ORDER) {
+    const liveId = liveById.get(name)
+    if (!liveId) drift.push(`ステータス「${name}」が見つかりません`)
+    else if (liveId !== STATUS_OPTIONS[name]) drift.push(`「${name}」のオプションIDが変わりました`)
+  }
+  for (const s of statuses) {
+    if (!(STATUS_ORDER as string[]).includes(s.name)) {
+      drift.push(`未知のステータス「${s.name}」が追加されています`)
+    }
+  }
+  if (field?.id && field.id !== STATUS_FIELD_ID) drift.push('Status フィールドのIDが変わりました')
+
   return {
     projectId: PROJECT_ID,
     statusFieldId: field?.id ?? STATUS_FIELD_ID,
     statuses,
     labels: await listLabels(env),
+    drift,
   }
 }
 

@@ -157,7 +157,17 @@ export function Board() {
       flat.map((t) => t.number).join(',') === board.tasks.map((t) => t.number).join(',')
     if (sameOrder && !newStatus) return // nothing actually changed
 
-    const afterItemId = insertAt > 0 ? flat[insertAt - 1].itemId : null
+    // afterItemId = nearest preceding card in the GLOBAL order that's actually on
+    // the board. Walking back skips cards hidden by an active label filter and any
+    // not-yet-boarded card (empty itemId) that would otherwise bump the item to the
+    // top, so the visible drop position and the persisted project order stay in sync.
+    let afterItemId: string | null = null
+    for (let i = insertAt - 1; i >= 0; i--) {
+      if (flat[i].itemId) {
+        afterItemId = flat[i].itemId
+        break
+      }
+    }
     board.moveTask(flat, moved.number, moved.itemId, afterItemId, newStatus)
   }
 

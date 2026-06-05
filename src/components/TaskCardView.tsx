@@ -40,7 +40,7 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
     >
       <div className="min-w-0 flex-1">
         <div className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{task.title}</div>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center gap-2">
           {onLabelTap && (
             <button
               onClick={(e) => {
@@ -48,10 +48,10 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
                 onLabelTap(task)
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="inline-flex items-center rounded-full border border-line px-1.5 py-0.5 text-sub transition hover:border-accent/60 hover:text-ink"
+              className="relative inline-flex items-center rounded-full border border-line px-2 py-1 text-sub transition before:absolute before:-inset-2 before:content-[''] hover:border-accent/60 hover:text-ink"
               aria-label="ラベルを付ける"
             >
-              <Tag className="h-3 w-3" />
+              <Tag className="h-3.5 w-3.5" />
             </button>
           )}
           {task.labels.map((l) => (
@@ -62,7 +62,7 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
               <MessageSquare className="h-3 w-3" /> {task.commentCount}
             </span>
           )}
-          <span className="text-[11px] text-sub/70">#{task.number}</span>
+          <span className="text-[11px] text-sub">#{task.number}</span>
         </div>
       </div>
       {onStatusTap && (
@@ -72,7 +72,7 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
             onStatusTap(task)
           }}
           onPointerDown={(e) => e.stopPropagation()} // let the pill be tapped without starting a drag
-          className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold"
+          className="relative shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold before:absolute before:-inset-2 before:content-['']"
           style={{ background: meta.tint, color: meta.dot }}
           aria-label={`ステータス: ${meta.label}（タップで変更）`}
         >

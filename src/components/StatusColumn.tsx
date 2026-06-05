@@ -45,7 +45,7 @@ export function StatusColumn({
         </span>
         <button
           onClick={() => onAdd(status)}
-          className="ml-auto rounded-lg p-1 text-sub transition hover:bg-panel2 hover:text-ink"
+          className="relative ml-auto rounded-lg p-2 text-sub transition before:absolute before:-inset-1.5 before:content-[''] hover:bg-panel2 hover:text-ink"
           aria-label={`${meta.label} にタスクを追加`}
         >
           <Plus className="h-4 w-4" />
@@ -59,7 +59,7 @@ export function StatusColumn({
         )}
       >
         {tasks.length === 0 && lineIndex == null && (
-          <p className="px-1 pt-1.5 text-xs text-sub/50">なし</p>
+          <p className="px-1 pt-1.5 text-xs text-sub">なし</p>
         )}
         {tasks.map((t, i) => (
           <Fragment key={t.number}>

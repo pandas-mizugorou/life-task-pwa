@@ -9,7 +9,20 @@ main = "src/index.ts"
 compatibility_date = "2024-11-01"
 
 [vars]
-# Comma-separated allowlist of PWA origins for CORS. "*" allows any origin
-# (the X-App-Key passphrase is the real gate). Tighten to your Pages URL after
-# the first deploy, e.g. "https://life-task-pwa.pages.dev".
+# Comma-separated allowlist of PWA origins for CORS (REQUIRED for browser access).
+# The Worker fails CLOSED: if this is unset or the request Origin isn't listed, no
+# CORS header is sent and browsers block the call. Set it to your Pages URL.
+# List "*" only to intentionally allow any origin (the X-App-Key passphrase is then
+# the sole gate for non-browser callers).
 ALLOWED_ORIGIN = "https://life-task-pwa.pages.dev"
+
+# Per-IP brute-force throttle for FAILED passphrase attempts. Uses the Cloudflare
+# Rate Limiting binding (no external resource to create). 20 failures / 60s / IP
+# -> HTTP 429. The code is a no-op if this binding is absent, so existing deploys
+# keep working; redeploy to enable it. namespace_id is an arbitrary integer that
+# must be unique among this account's rate limiters.
+[[unsafe.bindings]]
+name = "RATE_LIMITER"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 20, period = 60 }

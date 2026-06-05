@@ -14,9 +14,22 @@ export default {
     const url = new URL(request.url)
     if (!url.pathname.startsWith('/api/')) return json({ error: 'not found' }, 404, cors)
 
-    // ---- auth: constant-time passphrase check ----
+    // ---- auth: constant-time passphrase check, with per-IP throttling of failures ----
     const key = request.headers.get('X-App-Key') ?? ''
     if (!env.APP_PASSPHRASE || !(await timingSafeEqual(key, env.APP_PASSPHRASE))) {
+      // Brute-force guard: count failed attempts per IP and 429 once over the limit.
+      // No-op if the RATE_LIMITER binding isn't configured (older deploy / local dev).
+      if (env.RATE_LIMITER) {
+        const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+        const { success } = await env.RATE_LIMITER.limit({ key: `auth:${ip}` })
+        if (!success) {
+          return json(
+            { error: '試行回数が多すぎます。しばらくしてから再度お試しください。' },
+            429,
+            cors,
+          )
+        }
+      }
       return json({ error: '認証に失敗しました' }, 401, cors)
     }
 
@@ -109,18 +122,20 @@ function json(data: unknown, status: number, cors: Record<string, string>): Resp
 
 function corsHeaders(request: Request, env: Env): Record<string, string> {
   const origin = request.headers.get('Origin') ?? ''
-  const allowed = (env.ALLOWED_ORIGIN ?? '*').split(',').map((s) => s.trim()).filter(Boolean)
-  let allowOrigin = '*'
-  if (allowed.length && !allowed.includes('*')) {
-    allowOrigin = allowed.includes(origin) ? origin : allowed[0]
-  }
-  return {
-    'Access-Control-Allow-Origin': allowOrigin,
+  const allowed = (env.ALLOWED_ORIGIN ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, X-App-Key',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   }
+  // Fail closed: only emit Access-Control-Allow-Origin when the request's Origin is
+  // explicitly allowlisted. Unset or non-matching ALLOWED_ORIGIN => no CORS header =>
+  // browsers block cross-origin calls. List "*" to intentionally allow any origin
+  // (the X-App-Key passphrase stays the real gate for non-browser callers).
+  if (allowed.includes('*')) headers['Access-Control-Allow-Origin'] = '*'
+  else if (origin && allowed.includes(origin)) headers['Access-Control-Allow-Origin'] = origin
+  return headers
 }
 
 /** Compare two strings in constant time via SHA-256 digests (avoids timing/length leaks). */

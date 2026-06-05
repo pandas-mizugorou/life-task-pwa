@@ -160,7 +160,7 @@ export function TaskDetail() {
       <div className="flex items-center gap-2">
         <button
           onClick={() => navigate(-1)}
-          className="rounded-lg p-2 text-sub transition hover:bg-panel2 hover:text-ink"
+          className="rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
           aria-label="戻る"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -170,7 +170,7 @@ export function TaskDetail() {
           href={task.url}
           target="_blank"
           rel="noreferrer"
-          className="ml-auto rounded-lg p-2 text-sub transition hover:bg-panel2 hover:text-ink"
+          className="ml-auto rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
           aria-label="GitHub で開く"
         >
           <ExternalLink className="h-4 w-4" />
@@ -216,7 +216,7 @@ export function TaskDetail() {
               <h1 className="min-w-0 flex-1 text-lg font-bold leading-snug text-ink">{task.title}</h1>
               <button
                 onClick={() => setEditing(true)}
-                className="shrink-0 rounded-lg p-1.5 text-sub transition hover:bg-panel2 hover:text-ink"
+                className="shrink-0 rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
                 aria-label="編集"
               >
                 <Pencil className="h-4 w-4" />
@@ -241,7 +241,7 @@ export function TaskDetail() {
                 {task.body}
               </div>
             ) : (
-              <p className="mt-3 text-sm text-sub/60">本文なし</p>
+              <p className="mt-3 text-sm text-sub">本文なし</p>
             )}
             <div className="mt-4 border-t border-line/60 pt-3">
               <div className="mb-2 text-[13px] font-semibold text-sub">ラベル</div>

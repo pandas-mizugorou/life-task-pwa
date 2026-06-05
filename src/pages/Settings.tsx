@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ExternalLink, Link2, Lock, ShieldCheck, Tags } from 'lucide-react'
+import { AlertTriangle, ExternalLink, Link2, Lock, ShieldCheck, Tags } from 'lucide-react'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Input, Label } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
@@ -8,6 +8,7 @@ import { Switch } from '../components/ui/Switch'
 import { useToast } from '../components/ui/Toast'
 import { useAuth } from '../context/AuthContext'
 import { useBoard } from '../context/BoardContext'
+import * as api from '../lib/api'
 
 export function Settings({ firstRun = false }: { firstRun?: boolean }) {
   const { workerUrl, saveWorkerUrl, signOut } = useAuth()
@@ -58,6 +59,7 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
     <div className="mx-auto h-full max-w-2xl space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-28 pt-4">
       <h1 className="text-lg font-black text-ink">設定</h1>
 
+      <DriftWarning />
       <ShowClosedToggle />
 
       <Card>
@@ -141,6 +143,45 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
       </a>
       <p className="pt-1 text-center text-xs text-sub">Lifeタスク · GitHub Issues + Projects</p>
     </div>
+  )
+}
+
+/** Warns if the live GitHub board's Status field/options drifted from the Worker's
+ *  hardcoded ids (so a future status change can't silently land in the wrong column). */
+function DriftWarning() {
+  const [drift, setDrift] = useState<string[]>([])
+  useEffect(() => {
+    let alive = true
+    api
+      .getMeta()
+      .then((m) => {
+        if (alive) setDrift(m.drift ?? [])
+      })
+      .catch(() => {
+        /* transient — the board screen surfaces connection errors */
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+  if (drift.length === 0) return null
+  return (
+    <Card className="border-warn/50 bg-warn/5">
+      <CardTitle>
+        <span className="inline-flex items-center gap-2 text-warn">
+          <AlertTriangle className="h-4 w-4" />
+          ボード設定の不一致を検出
+        </span>
+      </CardTitle>
+      <p className="text-sm leading-relaxed text-sub">
+        GitHub のボード（ステータス）の設定が、アプリ内部の想定と一致していません。ステータスの変更が正しく反映されないことがあります。github.com 側でステータスを作り直した場合は、設定の更新が必要です。
+      </p>
+      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm font-medium text-warn">
+        {drift.map((d) => (
+          <li key={d}>{d}</li>
+        ))}
+      </ul>
+    </Card>
   )
 }
 

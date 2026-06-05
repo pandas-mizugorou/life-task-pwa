@@ -47,4 +47,7 @@ export interface Meta {
   statusFieldId: string
   statuses: { name: string; optionId: string }[]
   labels: Label[]
+  /** Non-empty when the live board's Status field/options no longer match the
+   *  Worker's hardcoded ids (drift). Each entry is a human-readable warning. */
+  drift?: string[]
 }

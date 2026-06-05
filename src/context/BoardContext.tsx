@@ -72,6 +72,18 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     tasksRef.current = tasks
   }, [tasks])
 
+  // Count of optimistic mutations in flight. While > 0 the focus/visibility
+  // auto-refresh is suppressed so it can't overwrite an in-progress optimistic
+  // update with stale server state (each op reconciles its own task on success).
+  const pendingRef = useRef(0)
+
+  // Surgical rollback: restore a single task to its pre-op snapshot without
+  // clobbering other tasks a concurrent op may have changed in the meantime.
+  const restoreTask = useCallback((number: number, prev: Task | undefined) => {
+    if (!prev) return
+    setTasks((ts) => ts.map((t) => (t.number === number ? prev : t)))
+  }, [])
+
   const refresh = useCallback(async () => {
     setError(null)
     try {
@@ -91,7 +103,9 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   // Re-sync when the tab/app regains focus (e.g. after editing on desktop).
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible') refresh()
+      if (document.visibilityState !== 'visible') return
+      if (pendingRef.current > 0) return // don't clobber an in-flight optimistic update
+      refresh()
     }
     window.addEventListener('focus', onVisible)
     document.addEventListener('visibilitychange', onVisible)
@@ -103,24 +117,28 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
 
   const setStatus = useCallback(
     async (number: number, to: Status) => {
-      const prev = tasksRef.current
+      const prevTask = tasksRef.current.find((t) => t.number === number)
+      pendingRef.current++
       setTasks((ts) => ts.map((t) => (t.number === number ? { ...t, status: to } : t)))
       haptic(12)
       try {
         const { task } = await api.setStatus(number, to)
         setTasks((ts) => ts.map((t) => (t.number === number ? task : t)))
       } catch (e) {
-        setTasks(prev) // rollback
+        restoreTask(number, prevTask) // surgical rollback
         toast({ variant: 'error', title: 'ステータス変更に失敗', description: errMsg(e) })
+      } finally {
+        pendingRef.current--
       }
     },
-    [toast],
+    [toast, restoreTask],
   )
 
   const setTaskLabels = useCallback(
     async (number: number, names: string[]) => {
-      const prev = tasksRef.current
+      const prevTask = tasksRef.current.find((t) => t.number === number)
       const objs = names.map((n) => labels.find((l) => l.name === n) ?? { name: n, color: '8b97b8' })
+      pendingRef.current++
       setTasks((ts) => ts.map((t) => (t.number === number ? { ...t, labels: objs } : t)))
       haptic(8)
       try {
@@ -128,17 +146,20 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         setTasks((ts) => ts.map((t) => (t.number === number ? task : t)))
         return task
       } catch (e) {
-        setTasks(prev) // rollback
+        restoreTask(number, prevTask) // surgical rollback
         toast({ variant: 'error', title: 'ラベル更新に失敗', description: errMsg(e) })
         throw e
+      } finally {
+        pendingRef.current--
       }
     },
-    [toast, labels],
+    [toast, labels, restoreTask],
   )
 
   const setTaskState = useCallback(
     async (number: number, state: 'open' | 'closed') => {
-      const prev = tasksRef.current
+      const prevTask = tasksRef.current.find((t) => t.number === number)
+      pendingRef.current++
       setTasks((ts) =>
         ts.map((t) =>
           t.number === number ? { ...t, state: state === 'closed' ? 'CLOSED' : 'OPEN' } : t,
@@ -150,16 +171,18 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         setTasks((ts) => ts.map((t) => (t.number === number ? task : t)))
         return task
       } catch (e) {
-        setTasks(prev) // rollback
+        restoreTask(number, prevTask) // surgical rollback
         toast({
           variant: 'error',
           title: state === 'closed' ? '完了に失敗' : '戻すのに失敗',
           description: errMsg(e),
         })
         throw e
+      } finally {
+        pendingRef.current--
       }
     },
-    [toast],
+    [toast, restoreTask],
   )
 
   const moveTask = useCallback(
@@ -171,14 +194,33 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
       newStatus: Status | null,
     ) => {
       const prev = tasksRef.current
+      pendingRef.current++
       setTasks(newTasks) // optimistic (reorder + status)
       haptic(10)
       try {
-        if (newStatus) await api.setStatus(number, newStatus)
-        await api.reorderTask(number, itemId, afterItemId)
+        let effectiveItemId = itemId
+        if (newStatus) {
+          // setStatus adds the issue to the board on demand, which can mint a fresh
+          // itemId. Use that (and reconcile the cache) for the reorder instead of the
+          // possibly-empty itemId captured at drag start.
+          const { task } = await api.setStatus(number, newStatus)
+          if (task.itemId) {
+            effectiveItemId = task.itemId
+            setTasks((ts) =>
+              ts.map((t) =>
+                t.number === number ? { ...t, itemId: task.itemId, status: task.status } : t,
+              ),
+            )
+          }
+        }
+        // Without a valid itemId the card isn't on the board, so there's nothing to
+        // reorder; the status change (if any) has already been applied.
+        if (effectiveItemId) await api.reorderTask(number, effectiveItemId, afterItemId)
       } catch (e) {
-        setTasks(prev) // rollback
+        setTasks(prev) // rollback (restores the full prior order)
         toast({ variant: 'error', title: '移動に失敗', description: errMsg(e) })
+      } finally {
+        pendingRef.current--
       }
     },
     [toast],
