@@ -27,10 +27,15 @@ export function SheetContent({
           className,
         )}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 18px)' }}
+        // Let an autoFocus field (e.g. the add/label inputs) take focus instead of the
+        // drag handle; on mobile this also opens the keyboard immediately for forms.
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        {/* Dismiss by tapping the handle, the X, or outside the sheet. */}
+        {/* Dismiss by tapping the handle, the X, or outside the sheet. tabIndex -1 so it
+            is not the keyboard/auto-focus target (the X and overlay also close). */}
         <RD.Close
           aria-label="閉じる"
+          tabIndex={-1}
           className="mx-auto mb-3 block h-1.5 w-12 rounded-full bg-line transition hover:bg-sub"
         />
         <div className="mb-4 flex items-start justify-between gap-4">

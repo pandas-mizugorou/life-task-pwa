@@ -61,10 +61,28 @@ export function TaskDetail() {
     load()
   }, [load])
 
+  // Warn before a full tab close/reload while there are unsaved edits.
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (editing && task && (title !== task.title || body !== task.body)) {
+        e.preventDefault()
+        e.returnValue = ''
+      }
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [editing, title, body, task])
+
   if (loading) return <FullSpinner label="読み込み中…" />
   if (error || !task) return <ErrorState message={error ?? 'タスクが見つかりません'} onRetry={load} />
 
   const meta = STATUS_META[task.status]
+
+  const dirty = editing && (title !== task.title || body !== task.body)
+  const goBack = () => {
+    if (dirty && !window.confirm('編集中の内容は保存されていません。破棄して戻りますか？')) return
+    navigate(-1)
+  }
 
   const pickStatus = async (s: Status) => {
     setPicker(false)
@@ -159,7 +177,7 @@ export function TaskDetail() {
     <div className="mx-auto h-full max-w-2xl space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-28 pt-4">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => navigate(-1)}
+          onClick={goBack}
           className="rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
           aria-label="戻る"
         >

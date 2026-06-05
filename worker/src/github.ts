@@ -22,7 +22,7 @@ const STATUS_FIELD_ID = 'PVTSSF_lAHOEMRrd84BZq2bzhUn6mk'
 /** status name -> single-select option id. The ONE thing to re-check if the
  *  board's Status options are restructured (rename keeps the id; a brand-new
  *  option gets a fresh id). /api/meta re-derives these live for verification. */
-const STATUS_OPTIONS: Record<Status, string> = {
+export const STATUS_OPTIONS: Record<Status, string> = {
   Backlog: '0846b24a',
   Todo: '8ab06b61',
   'In Progress': '0ed0e106',
@@ -33,21 +33,24 @@ const STATUS_OPTIONS: Record<Status, string> = {
 export const STATUS_ORDER: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pending', 'Done']
 
 /** Normalize a hex color to GitHub's 6-digit form (no '#'); fall back to neutral gray. */
-function normalizeColor(c?: string): string {
+export function normalizeColor(c?: string): string {
   const v = (c ?? '').replace(/^#/, '').trim()
   return /^[0-9a-fA-F]{6}$/.test(v) ? v.toLowerCase() : '8b97b8'
 }
 
-function isStatus(s: unknown): s is Status {
+export function isStatus(s: unknown): s is Status {
   return typeof s === 'string' && (STATUS_ORDER as string[]).includes(s)
 }
 
 // ---- errors -----------------------------------------------------------------
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status = 500) {
+  /** Server-only diagnostic detail. Logged in the Worker, never returned to the client. */
+  detail?: string
+  constructor(message: string, status = 500, detail?: string) {
     super(message)
     this.status = status
+    this.detail = detail
   }
 }
 
@@ -65,20 +68,76 @@ function ghHeaders(env: Env, rest = false): Record<string, string> {
   return h
 }
 
+const GH_TIMEOUT_MS = 10_000
+const GH_MAX_RETRIES = 1
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}
+function backoffMs(attempt: number): number {
+  // small jittered backoff so a transient blip doesn't turn into a retry storm
+  return 200 + attempt * 300 + Math.floor(Math.random() * 200)
+}
+
+/** fetch with a 10s timeout + one retry on network error / transient 5xx. */
+async function ghFetch(url: string, init: RequestInit): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const ctrl = new AbortController()
+    const timer = setTimeout(() => ctrl.abort(), GH_TIMEOUT_MS)
+    try {
+      const res = await fetch(url, { ...init, signal: ctrl.signal })
+      clearTimeout(timer)
+      if (res.status >= 500 && res.status <= 599 && attempt < GH_MAX_RETRIES) {
+        await sleep(backoffMs(attempt))
+        continue
+      }
+      return res
+    } catch (e) {
+      clearTimeout(timer)
+      if (attempt < GH_MAX_RETRIES) {
+        await sleep(backoffMs(attempt))
+        continue
+      }
+      throw new ApiError(
+        'GitHub に接続できませんでした（タイムアウトまたはネットワークエラー）',
+        502,
+        `ghFetch ${url}: ${e instanceof Error ? e.message : String(e)}`,
+      )
+    }
+  }
+}
+
+/** Throw a clear 429 if the response indicates GitHub primary/secondary rate limiting. */
+function throwIfRateLimited(res: Response): void {
+  const remaining = res.headers.get('x-ratelimit-remaining')
+  if (res.status === 429 || (res.status === 403 && remaining === '0')) {
+    const retryAfter = res.headers.get('retry-after')
+    throw new ApiError(
+      `GitHub のレート制限に達しました。${retryAfter ? `約${retryAfter}秒` : 'しばらく'}おいて再度お試しください。`,
+      429,
+      `rate limited (status ${res.status}, remaining ${remaining}, retry-after ${retryAfter})`,
+    )
+  }
+}
+
 async function ghGraphQL<T = unknown>(
   env: Env,
   query: string,
   variables: Record<string, unknown>,
 ): Promise<T> {
-  const res = await fetch('https://api.github.com/graphql', {
+  const res = await ghFetch('https://api.github.com/graphql', {
     method: 'POST',
     headers: ghHeaders(env),
     body: JSON.stringify({ query, variables }),
   })
-  const json = (await res.json()) as { data?: T; errors?: { message: string }[] }
+  throwIfRateLimited(res)
+  const json = (await res.json()) as { data?: T; errors?: { message: string; type?: string }[] }
   if (!res.ok || json.errors?.length) {
-    const msg = json.errors?.map((e) => e.message).join('; ') || `GraphQL ${res.status}`
-    throw new ApiError(`GitHub GraphQL: ${msg}`, res.ok ? 502 : res.status)
+    if (json.errors?.some((e) => e.type === 'RATE_LIMITED')) {
+      throw new ApiError('GitHub のレート制限に達しました。しばらくおいて再度お試しください。', 429)
+    }
+    const detail = json.errors?.map((e) => e.message).join('; ') || `GraphQL ${res.status}`
+    throw new ApiError('GitHub の処理に失敗しました。', res.ok ? 502 : res.status, detail)
   }
   return json.data as T
 }
@@ -89,14 +148,20 @@ async function ghRest(
   path: string,
   body?: unknown,
 ): Promise<any> {
-  const res = await fetch(`https://api.github.com${path}`, {
+  const res = await ghFetch(`https://api.github.com${path}`, {
     method,
     headers: ghHeaders(env, true),
     body: body ? JSON.stringify(body) : undefined,
   })
+  throwIfRateLimited(res)
   if (!res.ok) {
-    const txt = await res.text()
-    throw new ApiError(`GitHub ${method} ${path} -> ${res.status}: ${txt.slice(0, 300)}`, 502)
+    const txt = await res.text().catch(() => '')
+    // Generic, client-safe message; the upstream body/path stays server-side in `detail`.
+    throw new ApiError(
+      `GitHub への操作に失敗しました (HTTP ${res.status})`,
+      res.status >= 500 ? 502 : res.status,
+      `${method} ${path} -> ${res.status}: ${txt.slice(0, 300)}`,
+    )
   }
   if (res.status === 204) return null
   return res.json()
@@ -192,10 +257,16 @@ export async function getMeta(env: Env): Promise<Meta> {
   }
 }
 
-export async function getBoard(env: Env, includeClosed: boolean): Promise<Task[]> {
+const BOARD_MAX_PAGES = 50 // 50 x 100 = 5000 project items
+
+export async function getBoard(
+  env: Env,
+  includeClosed: boolean,
+): Promise<{ tasks: Task[]; truncated: boolean }> {
   const tasks: Task[] = []
   let cursor: string | null = null
-  for (let page = 0; page < 25; page++) {
+  let truncated = false
+  for (let page = 0; page < BOARD_MAX_PAGES; page++) {
     const data: any = await ghGraphQL(env, BOARD_QUERY, { project: PROJECT_ID, cursor })
     const conn: any = data?.node?.items
     if (!conn) break
@@ -207,8 +278,9 @@ export async function getBoard(env: Env, includeClosed: boolean): Promise<Task[]
     }
     if (!conn.pageInfo?.hasNextPage) break
     cursor = conn.pageInfo.endCursor ?? null
+    if (page === BOARD_MAX_PAGES - 1) truncated = true // more pages remain but we stop here
   }
-  return tasks
+  return { tasks, truncated }
 }
 
 export async function getTaskDetail(env: Env, number: number): Promise<{ task: Task; comments: Comment[] }> {
@@ -242,16 +314,28 @@ export async function createTask(
     body,
     labels,
   })
-  // 2. add it to the board
-  const add = await ghGraphQL<any>(env, ADD_ITEM_MUTATION, { project: PROJECT_ID, content: issue.node_id })
-  const itemId = add.addProjectV2ItemById.item.id
-  // 3. set its Status
-  await ghGraphQL(env, SET_STATUS_MUTATION, {
-    project: PROJECT_ID,
-    item: itemId,
-    field: STATUS_FIELD_ID,
-    opt: STATUS_OPTIONS[status],
-  })
+  // 2-3. add to the board + set Status. The issue already exists, so if these steps
+  // fail, surface its number instead of letting it silently vanish from the app.
+  let itemId: string
+  try {
+    const add = await ghGraphQL<any>(env, ADD_ITEM_MUTATION, {
+      project: PROJECT_ID,
+      content: issue.node_id,
+    })
+    itemId = add.addProjectV2ItemById.item.id
+    await ghGraphQL(env, SET_STATUS_MUTATION, {
+      project: PROJECT_ID,
+      item: itemId,
+      field: STATUS_FIELD_ID,
+      opt: STATUS_OPTIONS[status],
+    })
+  } catch (e) {
+    throw new ApiError(
+      `タスク（issue #${issue.number}）は作成できましたが、ボードへの登録に失敗しました。更新して確認するか、時間をおいて再度お試しください。`,
+      502,
+      `createTask post-create failed for #${issue.number}: ${e instanceof Error ? e.message : String(e)}`,
+    )
+  }
   return {
     number: issue.number,
     itemId,
@@ -303,8 +387,24 @@ export async function patchTask(
   }
   if (Object.keys(body).length === 0) throw new ApiError('変更内容がありません', 400)
   await ghRest(env, 'PATCH', `/repos/${OWNER}/${REPO}/issues/${number}`, body)
-  const raw = await fetchIssue(env, number)
+  let raw = await fetchIssue(env, number)
   if (!raw) throw new ApiError(`Issue #${number} が見つかりません`, 404)
+  // Reopening an issue that had been removed from the board: add it back so it
+  // reappears and is reorderable (otherwise it returns with an empty itemId).
+  if (patch?.state === 'open' && !raw.task.itemId) {
+    const add = await ghGraphQL<any>(env, ADD_ITEM_MUTATION, {
+      project: PROJECT_ID,
+      content: raw.nodeId,
+    })
+    const newItemId = add.addProjectV2ItemById.item.id
+    await ghGraphQL(env, SET_STATUS_MUTATION, {
+      project: PROJECT_ID,
+      item: newItemId,
+      field: STATUS_FIELD_ID,
+      opt: STATUS_OPTIONS[raw.task.status] ?? STATUS_OPTIONS.Backlog,
+    })
+    raw = (await fetchIssue(env, number)) ?? raw
+  }
   return raw.task
 }
 
@@ -371,9 +471,17 @@ export async function deleteLabel(env: Env, name: string): Promise<void> {
   await ghRest(env, 'DELETE', `/repos/${OWNER}/${REPO}/labels/${encodeURIComponent(name)}`)
 }
 
+/** Coerce an afterItemId input to a non-empty string, or null (= top of the list). */
+export function normalizeAfterId(afterItemId: unknown): string | null {
+  return typeof afterItemId === 'string' && afterItemId ? afterItemId : null
+}
+
 /** Reorder: place `itemId` right after `afterItemId` in the project order (null = top). */
 export async function reorderTask(env: Env, itemId: unknown, afterItemId: unknown): Promise<void> {
   if (typeof itemId !== 'string' || !itemId) throw new ApiError('itemId が不正です', 400)
-  const after = typeof afterItemId === 'string' && afterItemId ? afterItemId : null
-  await ghGraphQL(env, MOVE_ITEM_MUTATION, { project: PROJECT_ID, item: itemId, after })
+  await ghGraphQL(env, MOVE_ITEM_MUTATION, {
+    project: PROJECT_ID,
+    item: itemId,
+    after: normalizeAfterId(afterItemId),
+  })
 }

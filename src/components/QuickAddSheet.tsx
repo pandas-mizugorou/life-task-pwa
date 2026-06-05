@@ -8,7 +8,7 @@ import { Spinner } from './ui/Spinner'
 import { LabelToggleChips } from './LabelToggleChips'
 import { useToast } from './ui/Toast'
 import { useBoard } from '../context/BoardContext'
-import { STATUS_ORDER } from '../lib/status'
+import { ACTIVE_STATUSES, STATUS_META } from '../lib/status'
 import { errMsg, haptic } from '../lib/haptics'
 import type { Status } from '../lib/types'
 
@@ -82,9 +82,9 @@ export function QuickAddSheet({
           <div>
             <Label htmlFor="qa-status">ステータス</Label>
             <Select id="qa-status" value={status} onChange={(e) => setStatus(e.target.value as Status)}>
-              {STATUS_ORDER.map((s) => (
+              {ACTIVE_STATUSES.map((s) => (
                 <option key={s} value={s}>
-                  {s}
+                  {STATUS_META[s].label}
                 </option>
               ))}
             </Select>

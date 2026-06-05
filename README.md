@@ -15,8 +15,8 @@
 ```
 
 - **PWA**: React 19 + Vite + Tailwind v4 + vite-plugin-pwa。GitHub 資格情報は一切持たず、合言葉（`X-App-Key`）だけを送る。
-- **Worker**: GitHub Classic PAT（`repo` + `project`）を Secret 保管。`owner/repo/project` をハードコードし、`pandas-mizugorou/life` と Project #1 以外を操作できないようガード。合言葉が漏れても被害はこの 1 リポジトリに限定される。
-- Projects v2 はユーザー所有のため **Classic PAT が必須**（Fine-grained PAT では操作不可）。「削除」は GitHub 仕様上 Issue を物理削除できないため「クローズ」になる。
+- **Worker**: GitHub PAT を Secret 保管。`owner/repo/project` をハードコードし、`pandas-mizugorou/life` と Project #1 以外を操作できないようガード。合言葉が漏れても被害はこの 1 リポジトリに限定（さらに合言葉の連続失敗は IP 単位でレート制限）。
+- Projects v2 はユーザー所有のため、まずは **Classic PAT（`repo` + `project`）** で動かす。権限の絞り込みは後述の「セキュリティを高める」を参照。「削除」は GitHub 仕様上 Issue を物理削除できないため「クローズ」になる。
 
 ## 使い方・操作の注意
 
@@ -67,8 +67,8 @@ npm run deploy:pages
 ```
 出力された `https://life-task-pwa.pages.dev` をスマホで開き、ホーム画面に追加。
 
-### 4. CORS を締める（任意・推奨）
-`worker/wrangler.toml` の `ALLOWED_ORIGIN` を本番 Pages URL にして再デプロイ：
+### 4. CORS を設定（重要）
+Worker は **fail-close**（`ALLOWED_ORIGIN` 未設定や許可外 Origin にはブラウザ用 CORS ヘッダを返さない）。`worker/wrangler.toml` の `ALLOWED_ORIGIN` を本番 Pages URL にして再デプロイ：
 ```bash
 npm run deploy:worker
 ```
@@ -82,6 +82,12 @@ npm run dev:worker      # → http://127.0.0.1:8787
 npm run dev             # → http://localhost:5173 （初回に Worker URL に 127.0.0.1:8787 を入力）
 ```
 
+テスト / CI:
+```bash
+npm test                # Worker の純粋ロジックの Vitest（normalizeColor / isStatus / ルート正規表現 等）
+```
+push / PR では GitHub Actions（`.github/workflows/ci.yml`）が lint・build・worker 型チェック・test を実行する。
+
 ## エンドポイント（Worker）
 
 | Method | Path | 用途 |
@@ -94,6 +100,24 @@ npm run dev             # → http://localhost:5173 （初回に Worker URL に 
 | PATCH | `/api/tasks/:n` | タイトル/本文/クローズ・再開 |
 | POST | `/api/tasks/:n/comments` | コメント追加 |
 | DELETE | `/api/tasks/:n/item` | ボードから外す（Issue は残す） |
+
+## セキュリティを高める（任意）
+
+単独ユーザーの個人運用では現状でも実用十分だが、さらに守りを固めるなら：
+
+### PAT の権限を絞る（被害範囲の縮小）
+Classic PAT の `repo` は「所有する全 private リポジトリ」へのフルアクセスを含むため、万一漏れたときの影響が広い。`life` だけに絞るには：
+
+- **Fine-grained PAT**（推奨候補）: GitHub は user 所有 Projects v2 への fine-grained PAT 対応を提供している。対象リポジトリを `life` のみにし、権限を **Issues: Read and write** ＋ **Projects: Read and write** ＋ **Metadata: Read** に絞って発行する。切替後は必ずアプリでステータス変更・追加・並べ替え（GraphQL ミューテーション）が通るか実機確認すること（環境により Projects 操作の可否が異なるため）。
+- **専用マシンユーザー**: `life` だけを所有する別 GitHub アカウントを作り、そのアカウントの Classic PAT を使う。`repo` スコープでも個人の他リポジトリには届かない。
+
+どちらもコード変更は不要（Worker はトークン種別を問わない）。`wrangler secret put GITHUB_PAT --config worker/wrangler.toml` で差し替えるだけ。PAT には有効期限を付け、定期的にローテーションする。
+
+### すでに有効な防御
+- **合言葉のレート制限**: 認証失敗を IP 単位で制限（20 回 / 60 秒 → 429）。`worker/wrangler.toml` の `[[unsafe.bindings]]`（Cloudflare Rate Limiting）。再デプロイで有効化。
+- **CORS fail-close**: 許可 Origin 以外にはブラウザ用 CORS ヘッダを返さない。
+- **エラーの秘匿**: GitHub 由来の詳細はサーバ側ログ（Workers Logs / `[observability]`）のみに記録し、クライアントには汎用メッセージを返す。
+- **リクエストサイズ上限**: 64KB を超える本文は 413 で拒否。
 
 ## トークン / 合言葉のローテーション
 

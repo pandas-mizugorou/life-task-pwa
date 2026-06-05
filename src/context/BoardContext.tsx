@@ -11,6 +11,8 @@ interface BoardValue {
   tasks: Task[]
   byStatus: Record<Status, Task[]>
   total: number
+  /** True when the board hit the server-side page cap (not all items loaded). */
+  truncated: boolean
   labelFilter: string | null
   setLabelFilter: (v: string | null) => void
   showClosed: boolean
@@ -56,6 +58,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [truncated, setTruncated] = useState(false)
   const [labels, setLabels] = useState<Label[]>([])
   const [labelFilter, setLabelFilter] = useState<string | null>(null)
   const [showClosed, setShowClosedState] = useState<boolean>(
@@ -87,8 +90,9 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const refresh = useCallback(async () => {
     setError(null)
     try {
-      const { tasks } = await api.getBoard(showClosed)
+      const { tasks, truncated } = await api.getBoard(showClosed)
       setTasks(tasks)
+      setTruncated(!!truncated)
     } catch (e) {
       setError(errMsg(e))
     } finally {
@@ -290,8 +294,11 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     for (const t of tasks) {
       if (t.state === 'CLOSED') continue // closed = completed → shown in 完了済み column, not here
       if (labelFilter && !t.labels.some((l) => l.name === labelFilter)) continue
-      const col: Status = ACTIVE_STATUSES.includes(t.status) ? t.status : 'Todo' // open+Done/unknown → Todo
-      groups[col].push(t)
+      const inActive = ACTIVE_STATUSES.includes(t.status)
+      const col: Status = inActive ? t.status : 'Todo' // open+Done/unknown → Todo
+      // Normalize the card's status to its display column, so the pill matches the
+      // column and a same-column reorder can't silently rewrite a legacy "Done".
+      groups[col].push(inActive ? t : { ...t, status: col })
     }
     return groups
   }, [tasks, labelFilter])
@@ -314,6 +321,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         tasks,
         byStatus,
         total,
+        truncated,
         labelFilter,
         setLabelFilter,
         showClosed,

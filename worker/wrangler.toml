@@ -26,3 +26,10 @@ name = "RATE_LIMITER"
 type = "ratelimit"
 namespace_id = "1001"
 simple = { limit = 20, period = 60 }
+
+# Workers Logs: capture console.error output (5xx / rate-limit diagnostics) for
+# after-the-fact debugging. Free tier is fine for a single-user app. We log only
+# non-sensitive detail (never the passphrase or PAT).
+[observability]
+enabled = true
+head_sampling_rate = 1

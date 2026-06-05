@@ -15,7 +15,8 @@ import {
 } from '@dnd-kit/core'
 import { useBoard } from '../context/BoardContext'
 import { FullSpinner } from '../components/ui/Spinner'
-import { ErrorState } from '../components/ui/States'
+import { Button } from '../components/ui/Button'
+import { EmptyState, ErrorState } from '../components/ui/States'
 import { LabelFilterChips } from '../components/LabelFilterChips'
 import { StatusColumn } from '../components/StatusColumn'
 import { CompletedColumn } from '../components/CompletedColumn'
@@ -181,6 +182,14 @@ export function Board() {
         />
       </div>
 
+      {board.truncated && (
+        <div className="shrink-0 px-4 pt-2">
+          <p className="rounded-lg bg-warn/15 px-3 py-1.5 text-center text-xs font-semibold text-warn">
+            タスクが多いため一部のみ表示しています。
+          </p>
+        </div>
+      )}
+
       {/* Horizontal kanban. Long-press a card to drag it between columns; quick swipes
           still scroll. Snap is disabled while dragging so auto-scroll stays smooth. */}
       <DndContext
@@ -194,26 +203,50 @@ export function Board() {
           setOverColumn(null)
         }}
       >
-        <div
-          className={cn(
-            'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',
-            !activeTask && 'snap-x snap-proximity',
-          )}
-        >
-          {ACTIVE_STATUSES.map((s) => (
-            <StatusColumn
-              key={s}
-              status={s}
-              tasks={board.byStatus[s]}
-              isTarget={overColumn === s}
-              lineIndex={dropIndicator && dropIndicator.col === s ? dropIndicator.index : null}
-              onStatusTap={setPicker}
-              onLabelTap={setLabelTarget}
-              onAdd={setAddStatus}
-            />
-          ))}
-          {board.showClosed && <CompletedColumn tasks={board.completed} />}
-        </div>
+        {board.total === 0 && !(board.showClosed && board.completed.length > 0) ? (
+          <div className="flex min-h-0 flex-1 items-center justify-center px-6">
+            {board.labelFilter ? (
+              <EmptyState
+                icon="🏷️"
+                title="このラベルのタスクはありません"
+                description="別のラベルを選ぶか、フィルタを解除してください。"
+                action={
+                  <Button variant="secondary" onClick={() => board.setLabelFilter(null)}>
+                    フィルタを解除
+                  </Button>
+                }
+              />
+            ) : (
+              <EmptyState
+                icon="🗒️"
+                title="タスクがありません"
+                description="最初のタスクを追加して始めましょう。"
+                action={<Button onClick={() => setAddStatus('Backlog')}>＋ タスクを追加</Button>}
+              />
+            )}
+          </div>
+        ) : (
+          <div
+            className={cn(
+              'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',
+              !activeTask && 'snap-x snap-proximity',
+            )}
+          >
+            {ACTIVE_STATUSES.map((s) => (
+              <StatusColumn
+                key={s}
+                status={s}
+                tasks={board.byStatus[s]}
+                isTarget={overColumn === s}
+                lineIndex={dropIndicator && dropIndicator.col === s ? dropIndicator.index : null}
+                onStatusTap={setPicker}
+                onLabelTap={setLabelTarget}
+                onAdd={setAddStatus}
+              />
+            ))}
+            {board.showClosed && <CompletedColumn tasks={board.completed} />}
+          </div>
+        )}
 
         <DragOverlay dropAnimation={null}>
           {activeTask ? (

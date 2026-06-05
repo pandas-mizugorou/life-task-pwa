@@ -50,4 +50,21 @@ export default defineConfig({
       devOptions: { enabled: false },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Split the heavy libs into their own vendor chunks so app-code changes
+        // don't bust their cache across deploys (and the entry chunk stays smaller).
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return
+          if (id.includes('framer-motion')) return 'motion'
+          if (id.includes('@radix-ui')) return 'radix'
+          if (id.includes('@dnd-kit')) return 'dnd'
+          if (id.includes('react-router')) return 'router'
+          if (id.includes('/react/') || id.includes('/react-dom/') || id.includes('/scheduler/'))
+            return 'react'
+        },
+      },
+    },
+  },
 })

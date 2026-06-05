@@ -5,6 +5,10 @@ import type { Env } from './types'
 import * as github from './github'
 import { ApiError, STATUS_ORDER } from './github'
 
+/** Routes for /api/tasks/:number and its sub-resources (exported for tests). */
+export const TASK_PATH_RE =
+  /^\/api\/tasks\/(\d+)(\/status|\/comments|\/item|\/labels|\/position)?$/
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const cors = corsHeaders(request, env)
@@ -33,12 +37,31 @@ export default {
       return json({ error: '認証に失敗しました' }, 401, cors)
     }
 
+    // Reject oversized bodies (defense-in-depth; titles/comments/labels are all small).
+    const contentLength = Number(request.headers.get('Content-Length') ?? '0')
+    if (contentLength > 64 * 1024) return json({ error: 'リクエストが大きすぎます' }, 413, cors)
+
     try {
       const result = await route(request, env, url)
       return json(result, 200, cors)
     } catch (e) {
-      const status = e instanceof ApiError ? e.status : 500
-      return json({ error: (e as Error)?.message ?? 'サーバーエラー' }, status, cors)
+      if (e instanceof SyntaxError) return json({ error: 'リクエスト形式が正しくありません' }, 400, cors)
+      const isApi = e instanceof ApiError
+      const status = isApi ? e.status : 500
+      const message = isApi ? e.message : 'サーバーエラーが発生しました'
+      // Server-side only: log detail for diagnosis; it is never returned to the client.
+      const detail = isApi
+        ? e.detail
+        : e instanceof Error
+          ? `${e.message}\n${e.stack ?? ''}`
+          : String(e)
+      if (status >= 500 || status === 429) {
+        console.error(
+          `[life-task-api] ${request.method} ${url.pathname} -> ${status}: ${message}` +
+            (detail ? ` :: ${detail}` : ''),
+        )
+      }
+      return json({ error: message }, status, cors)
     }
   },
 }
@@ -51,7 +74,8 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
 
   if (p === '/api/board' && m === 'GET') {
     const includeClosed = url.searchParams.get('include') === 'closed'
-    return { tasks: await github.getBoard(env, includeClosed), statuses: STATUS_ORDER }
+    const { tasks, truncated } = await github.getBoard(env, includeClosed)
+    return { tasks, statuses: STATUS_ORDER, truncated }
   }
 
   if (p === '/api/labels' && m === 'GET') return { labels: await github.listLabels(env) }
@@ -77,7 +101,7 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
     return { task: await github.createTask(env, b) }
   }
 
-  const mm = p.match(/^\/api\/tasks\/(\d+)(\/status|\/comments|\/item|\/labels|\/position)?$/)
+  const mm = p.match(TASK_PATH_RE)
   if (mm) {
     const number = parseInt(mm[1], 10)
     const sub = mm[2]
@@ -139,7 +163,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
 }
 
 /** Compare two strings in constant time via SHA-256 digests (avoids timing/length leaks). */
-async function timingSafeEqual(a: string, b: string): Promise<boolean> {
+export async function timingSafeEqual(a: string, b: string): Promise<boolean> {
   const enc = new TextEncoder()
   const [ha, hb] = await Promise.all([
     crypto.subtle.digest('SHA-256', enc.encode(a)),

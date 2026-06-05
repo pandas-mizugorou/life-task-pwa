@@ -70,7 +70,9 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 export const getMeta = () => call<Meta>('/api/meta')
 
 export const getBoard = (includeClosed = false) =>
-  call<{ tasks: Task[]; statuses: Status[] }>(`/api/board${includeClosed ? '?include=closed' : ''}`)
+  call<{ tasks: Task[]; statuses: Status[]; truncated?: boolean }>(
+    `/api/board${includeClosed ? '?include=closed' : ''}`,
+  )
 
 export const getTask = (n: number) => call<{ task: Task; comments: Comment[] }>(`/api/tasks/${n}`)
 
