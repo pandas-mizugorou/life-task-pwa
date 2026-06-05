@@ -12,9 +12,9 @@ export const ACTIVE_STATUSES: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pen
 
 /** Visual treatment per status (dot color + soft tint for active pills). */
 export const STATUS_META: Record<Status, { label: string; dot: string; tint: string }> = {
-  Backlog: { label: 'Backlog', dot: '#9aa6c8', tint: 'rgba(154,166,200,0.16)' },
-  Todo: { label: 'Todo', dot: '#5b8cff', tint: 'rgba(91,140,255,0.18)' },
-  'In Progress': { label: 'In Progress', dot: '#f7b955', tint: 'rgba(247,185,85,0.18)' },
-  Pending: { label: 'Pending', dot: '#f06868', tint: 'rgba(240,104,104,0.16)' },
-  Done: { label: 'Done', dot: '#36d399', tint: 'rgba(54,211,153,0.18)' },
+  Backlog: { label: 'Backlog', dot: '#8b949e', tint: 'rgba(139,148,158,0.16)' },
+  Todo: { label: 'Todo', dot: '#539bf5', tint: 'rgba(83,155,245,0.16)' },
+  'In Progress': { label: 'In Progress', dot: '#d29922', tint: 'rgba(210,153,34,0.18)' },
+  Pending: { label: 'Pending', dot: '#db6d28', tint: 'rgba(219,109,40,0.16)' },
+  Done: { label: 'Done', dot: '#3fb950', tint: 'rgba(63,185,80,0.16)' },
 }

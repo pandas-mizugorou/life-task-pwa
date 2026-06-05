@@ -24,22 +24,23 @@
 }
 
 :root {
-  --bg: #0b1020;
-  --panel: #141b30;
-  --panel2: #1b2440;
-  --line: #27314f;
-  --ink: #e8edff;
-  --sub: #9aa6c8;
-  --accent: #5b8cff;
-  --accent2: #36d399;
-  --warn: #f7b955;
-  --bad: #f06868;
-  --good: #36d399;
-  --chip: #222d4d;
-  --hero-ink: #06122a;
-  --grad: linear-gradient(135deg, #5b8cff, #36d399);
-  --bg-radial: radial-gradient(1200px 800px at 80% -10%, #1a2a55 0, transparent 60%);
-  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+  /* GitHub dark, monochrome base (functional colour only where it aids reading) */
+  --bg: #0d1117;
+  --panel: #161b22;
+  --panel2: #21262d;
+  --line: #30363d;
+  --ink: #e6edf3;
+  --sub: #8b949e;
+  --accent: #adbac7;
+  --accent2: #cdd5de;
+  --warn: #d29922;
+  --bad: #f85149;
+  --good: #3fb950;
+  --chip: #21262d;
+  --hero-ink: #0d1117;
+  --grad: linear-gradient(135deg, #f0f3f6, #d8dee6);
+  --bg-radial: radial-gradient(1100px 760px at 80% -10%, #161b22 0, transparent 60%);
+  --card-shadow: 0 1px 2px rgba(1, 4, 9, 0.3);
   color-scheme: dark;
 }
 

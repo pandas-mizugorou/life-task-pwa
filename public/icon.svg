@@ -10,11 +10,11 @@
   <rect x="3" y="3" width="506" height="506" rx="109" fill="none" stroke="#e2e6ec" stroke-width="3"/>
 
   <!-- ring -->
-  <circle cx="234" cy="284" r="150" fill="none" stroke="#24292f" stroke-width="44"/>
+  <circle cx="236" cy="286" r="146" fill="none" stroke="#2b3138" stroke-width="42"/>
 
-  <!-- check -->
-  <path d="M168 290 L216 340 L300 250" fill="none" stroke="#24292f" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- check whose long arm continues out to the top-right as the marker (one stroke) -->
+  <path d="M170 296 L218 344 L394 132" fill="none" stroke="#2b3138" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- diagonal marker stroke (top-right), darker for the overlap -->
-  <path d="M322 198 L404 110" fill="none" stroke="#15181d" stroke-width="48" stroke-linecap="round"/>
+  <!-- darker overlap where the stroke crosses the ring (two-tone, like Google Tasks) -->
+  <path d="M330 210 L362 170" fill="none" stroke="#12161b" stroke-width="42" stroke-linecap="round"/>
 </svg>
