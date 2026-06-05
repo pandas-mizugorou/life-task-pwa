@@ -2,64 +2,16 @@
   <defs>
     <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#ffffff"/>
-      <stop offset="1" stop-color="#eef1f6"/>
+      <stop offset="1" stop-color="#f3f5f8"/>
     </linearGradient>
   </defs>
 
   <rect width="512" height="512" fill="url(#paper)"/>
 
-  <g transform="translate(256 256) scale(0.86) translate(-256 -256)">
-    <rect x="24" y="40" width="148" height="432" rx="22" fill="#f2f5f9" stroke="#dbe1ea" stroke-width="2"/>
-    <rect x="182" y="40" width="148" height="432" rx="22" fill="#f2f5f9" stroke="#dbe1ea" stroke-width="2"/>
-    <rect x="340" y="40" width="148" height="432" rx="22" fill="#f2f5f9" stroke="#dbe1ea" stroke-width="2"/>
-
-    <circle cx="52" cy="76" r="10" fill="#8b95a5"/>
-    <rect x="70" y="69" width="78" height="14" rx="7" fill="#c3cbd8"/>
-    <circle cx="210" cy="76" r="10" fill="#3b82f6"/>
-    <rect x="228" y="69" width="78" height="14" rx="7" fill="#c3cbd8"/>
-    <circle cx="368" cy="76" r="10" fill="#2da44e"/>
-    <rect x="386" y="69" width="78" height="14" rx="7" fill="#c3cbd8"/>
-
-    <rect x="40" y="116" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-    <circle cx="66" cy="148" r="12" fill="none" stroke="#1f9d57" stroke-width="5"/>
-    <circle cx="66" cy="148" r="3.5" fill="#1f9d57"/>
-    <rect x="90" y="142" width="52" height="12" rx="6" fill="#2b3440"/>
-    <rect x="56" y="186" width="84" height="12" rx="6" fill="#2b3440" opacity="0.82"/>
-    <rect x="56" y="208" width="56" height="10" rx="5" fill="#8b95a5"/>
-
-    <rect x="40" y="252" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-    <circle cx="66" cy="284" r="12" fill="none" stroke="#1f9d57" stroke-width="5"/>
-    <circle cx="66" cy="284" r="3.5" fill="#1f9d57"/>
-    <rect x="90" y="278" width="50" height="12" rx="6" fill="#2b3440"/>
-    <rect x="56" y="322" width="84" height="12" rx="6" fill="#2b3440" opacity="0.82"/>
-    <rect x="56" y="344" width="48" height="10" rx="5" fill="#8b95a5"/>
-
-    <rect x="198" y="116" width="116" height="184" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-    <rect x="214" y="138" width="46" height="16" rx="8" fill="#3b82f6"/>
-    <rect x="214" y="168" width="84" height="12" rx="6" fill="#2b3440"/>
-    <rect x="214" y="190" width="64" height="10" rx="5" fill="#8b95a5"/>
-    <rect x="214" y="252" width="84" height="12" rx="6" fill="#e6eaf1"/>
-    <rect x="214" y="252" width="50" height="12" rx="6" fill="#3b82f6"/>
-
-    <rect x="198" y="316" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-    <circle cx="224" cy="348" r="12" fill="none" stroke="#1f9d57" stroke-width="5"/>
-    <circle cx="224" cy="348" r="3.5" fill="#1f9d57"/>
-    <rect x="248" y="342" width="50" height="12" rx="6" fill="#2b3440"/>
-    <rect x="214" y="386" width="84" height="12" rx="6" fill="#2b3440" opacity="0.82"/>
-    <rect x="214" y="408" width="52" height="10" rx="5" fill="#8b95a5"/>
-
-    <rect x="356" y="116" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-    <circle cx="384" cy="150" r="16" fill="#2da44e"/>
-    <path d="M375 150 l6 7 l12 -14" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="410" y="144" width="44" height="12" rx="6" fill="#aeb7c4"/>
-    <rect x="372" y="190" width="84" height="11" rx="5" fill="#c3cbd8"/>
-    <rect x="372" y="210" width="56" height="9" rx="4" fill="#c3cbd8"/>
-
-    <rect x="356" y="252" width="116" height="120" rx="14" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-    <circle cx="384" cy="286" r="16" fill="#2da44e"/>
-    <path d="M375 286 l6 7 l12 -14" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
-    <rect x="410" y="280" width="44" height="12" rx="6" fill="#aeb7c4"/>
-    <rect x="372" y="326" width="84" height="11" rx="5" fill="#c3cbd8"/>
-    <rect x="372" y="346" width="48" height="9" rx="4" fill="#c3cbd8"/>
+  <!-- centred + scaled into the maskable safe zone -->
+  <g transform="translate(256 256) scale(0.86) translate(-245 -271)">
+    <circle cx="234" cy="284" r="150" fill="none" stroke="#24292f" stroke-width="44"/>
+    <path d="M168 290 L216 340 L300 250" fill="none" stroke="#24292f" stroke-width="44" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M322 198 L404 110" fill="none" stroke="#15181d" stroke-width="48" stroke-linecap="round"/>
   </g>
 </svg>
