@@ -14,7 +14,7 @@ export const ACTIVE_STATUSES: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pen
 export const STATUS_META: Record<Status, { label: string; dot: string; tint: string }> = {
   Backlog: { label: 'Backlog', dot: '#8b949e', tint: 'rgba(139,148,158,0.16)' },
   Todo: { label: 'Todo', dot: '#539bf5', tint: 'rgba(83,155,245,0.16)' },
-  'In Progress': { label: 'In Progress', dot: '#d29922', tint: 'rgba(210,153,34,0.18)' },
-  Pending: { label: 'Pending', dot: '#db6d28', tint: 'rgba(219,109,40,0.16)' },
+  'In Progress': { label: 'In Progress', dot: '#e3b341', tint: 'rgba(227,179,65,0.18)' },
+  Pending: { label: 'Pending', dot: '#a371f7', tint: 'rgba(163,113,247,0.18)' },
   Done: { label: 'Done', dot: '#3fb950', tint: 'rgba(63,185,80,0.16)' },
 }
