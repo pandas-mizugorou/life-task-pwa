@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import {
   DndContext,
@@ -38,6 +38,12 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
   return pointer.length > 0 ? pointer : closestCorners(args)
 }
 
+// Preserve the board's horizontal scroll position across route changes (e.g. open a
+// task's detail and come back). The route swap remounts Board, which would otherwise
+// reset scrollLeft to 0 and snap back to Backlog/Todo. Module-scoped so it survives
+// the remount for the session (resets only on a full reload).
+let savedScrollLeft = 0
+
 export function Board() {
   const board = useBoard()
   const [picker, setPicker] = useState<Task | null>(null)
@@ -57,6 +63,16 @@ export function Board() {
   // Pull down (when a column is at the top) to refresh; disabled while dragging a card.
   const boardRef = useRef<HTMLDivElement>(null)
   const { pull, refreshing, armed } = usePullToRefresh(boardRef, board.refresh, activeTask !== null)
+
+  // Restore the saved horizontal scroll once the columns have mounted (runs each
+  // render until it lands, so it also covers a cold load -> data -> columns).
+  const columnsRef = useRef<HTMLDivElement>(null)
+  const didRestore = useRef(false)
+  useLayoutEffect(() => {
+    if (didRestore.current || !columnsRef.current) return
+    columnsRef.current.scrollLeft = savedScrollLeft
+    didRestore.current = true
+  })
 
   if (board.loading && board.tasks.length === 0) return <FullSpinner label="ボードを読み込み中…" />
   if (board.error && board.tasks.length === 0)
@@ -275,6 +291,10 @@ export function Board() {
             </div>
           ) : (
             <div
+              ref={columnsRef}
+              onScroll={(e) => {
+                savedScrollLeft = e.currentTarget.scrollLeft
+              }}
               className={cn(
                 'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',
                 !activeTask && 'snap-x snap-proximity',
