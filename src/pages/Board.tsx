@@ -27,6 +27,7 @@ import { LabelQuickSheet } from '../components/LabelQuickSheet'
 import { TaskCardView } from '../components/TaskCardView'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
+import { boardScroll } from '../lib/boardScroll'
 import { usePullToRefresh } from '../lib/usePullToRefresh'
 import { ACTIVE_STATUSES } from '../lib/status'
 import type { Status, Task } from '../lib/types'
@@ -37,12 +38,6 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
   const pointer = pointerWithin(args)
   return pointer.length > 0 ? pointer : closestCorners(args)
 }
-
-// Preserve the board's horizontal scroll position across route changes (e.g. open a
-// task's detail and come back). The route swap remounts Board, which would otherwise
-// reset scrollLeft to 0 and snap back to Backlog/Todo. Module-scoped so it survives
-// the remount for the session (resets only on a full reload).
-let savedScrollLeft = 0
 
 export function Board() {
   const board = useBoard()
@@ -70,7 +65,7 @@ export function Board() {
   const didRestore = useRef(false)
   useLayoutEffect(() => {
     if (didRestore.current || !columnsRef.current) return
-    columnsRef.current.scrollLeft = savedScrollLeft
+    columnsRef.current.scrollLeft = boardScroll.left
     didRestore.current = true
   })
 
@@ -293,7 +288,7 @@ export function Board() {
             <div
               ref={columnsRef}
               onScroll={(e) => {
-                savedScrollLeft = e.currentTarget.scrollLeft
+                boardScroll.left = e.currentTarget.scrollLeft
               }}
               className={cn(
                 'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',

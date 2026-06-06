@@ -1,7 +1,8 @@
-import { Fragment } from 'react'
+import { Fragment, useLayoutEffect, useRef } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { Plus } from 'lucide-react'
 import { cn } from '../lib/cn'
+import { boardScroll } from '../lib/boardScroll'
 import { STATUS_META } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 import { TaskCard } from './TaskCard'
@@ -29,6 +30,19 @@ export function StatusColumn({
 }) {
   const meta = STATUS_META[status]
   const { setNodeRef, isOver } = useDroppable({ id: status })
+  // Restore this column's vertical scroll across the task-detail route remount.
+  // Own ref (merged with the droppable's below) so it can be mutated like Board's.
+  const listRef = useRef<HTMLDivElement>(null)
+  const didRestore = useRef(false)
+  useLayoutEffect(() => {
+    if (didRestore.current || !listRef.current) return
+    listRef.current.scrollTop = boardScroll.tops.get(status) ?? 0
+    didRestore.current = true
+  })
+  const setListRef = (el: HTMLDivElement | null) => {
+    setNodeRef(el)
+    listRef.current = el
+  }
   const highlight = isOver || isTarget
 
   return (
@@ -52,7 +66,10 @@ export function StatusColumn({
         </button>
       </div>
       <div
-        ref={setNodeRef}
+        ref={setListRef}
+        onScroll={(e) => {
+          boardScroll.tops.set(status, e.currentTarget.scrollTop)
+        }}
         className={cn(
           'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl border-2 border-transparent bg-panel2/30 p-2 pb-4 transition-colors',
           highlight && 'border-accent2 bg-accent2/15',
