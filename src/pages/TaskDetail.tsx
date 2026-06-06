@@ -283,10 +283,11 @@ export function TaskDetail() {
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <button
                 onClick={() => setPicker(true)}
-                className="relative rounded-full px-3 py-1.5 text-[12px] font-bold before:absolute before:-inset-2 before:content-['']"
-                style={{ background: meta.tint, color: meta.dot }}
+                className="relative inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold text-ink before:absolute before:-inset-2 before:content-['']"
+                style={{ background: meta.tint }}
                 aria-label={`ステータス: ${meta.label}（タップで変更）`}
               >
+                <span className="h-2 w-2 rounded-full" style={{ background: meta.dot }} aria-hidden />
                 {meta.label}
               </button>
               {task.state === 'CLOSED' && (

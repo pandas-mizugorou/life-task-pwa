@@ -45,7 +45,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <span
               className={cn(
                 'mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full',
-                it.variant === 'success' && 'bg-accent2',
+                it.variant === 'success' && 'bg-good',
                 it.variant === 'error' && 'bg-bad',
                 it.variant === 'default' && 'bg-accent',
               )}

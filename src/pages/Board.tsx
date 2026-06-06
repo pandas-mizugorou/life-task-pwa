@@ -314,7 +314,7 @@ export function Board() {
           )}
         </div>
 
-        <DragOverlay dropAnimation={null}>
+        <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
           {activeTask ? (
             <TaskCardView task={activeTask} className="rotate-1 shadow-2xl ring-2 ring-accent2/50" />
           ) : null}

@@ -74,10 +74,11 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
             onStatusTap(task)
           }}
           onPointerDown={(e) => e.stopPropagation()} // let the pill be tapped without starting a drag
-          className="relative shrink-0 rounded-full px-3 py-1.5 text-[11px] font-bold before:absolute before:-inset-2 before:content-['']"
-          style={{ background: meta.tint, color: meta.dot }}
+          className="relative inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold text-ink before:absolute before:-inset-2 before:content-['']"
+          style={{ background: meta.tint }}
           aria-label={`ステータス: ${meta.label}（タップで変更）`}
         >
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.dot }} aria-hidden />
           {meta.label}
         </button>
       )}

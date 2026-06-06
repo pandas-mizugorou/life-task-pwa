@@ -80,8 +80,10 @@ export function StatusColumn({
           boardScroll.tops.set(status, e.currentTarget.scrollTop)
         }}
         className={cn(
-          'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl border-2 border-transparent bg-panel2/30 p-2 pb-4 transition-colors',
-          highlight && 'border-accent2 bg-accent2/15',
+          // Highlight via an inset ring (composited) + bg, not a border toggle, so a long
+          // column doesn't repaint/relayout every dragOver frame.
+          'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl bg-panel2/30 p-2 pb-4 transition-[background-color,box-shadow]',
+          highlight && 'bg-accent2/15 shadow-[inset_0_0_0_2px_var(--color-accent2)]',
         )}
       >
         {tasks.length === 0 && lineIndex == null && (
