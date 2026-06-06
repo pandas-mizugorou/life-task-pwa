@@ -19,7 +19,6 @@ import { CommentList } from '../components/CommentList'
 import { Markdown } from '../components/Markdown'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { useToast } from '../components/ui/Toast'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { useBoard } from '../context/BoardContext'
 import * as api from '../lib/api'
 import { STATUS_META } from '../lib/status'
@@ -48,7 +47,6 @@ export function TaskDetail() {
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
   const [acting, setActing] = useState(false)
-  const [confirmRemove, setConfirmRemove] = useState(false)
   const bodyRef = useAutoGrow(body) // grow the body editor to fit its content
 
   const load = useCallback(() => {
@@ -144,14 +142,17 @@ export function TaskDetail() {
     }
   }
 
-  const toggleClose = async () => {
-    const closing = task.state === 'OPEN'
+  const setClosed = async (closed: boolean) => {
     setActing(true)
     try {
-      const { task: updated } = await api.patchTask(number, { state: closing ? 'closed' : 'open' })
+      const { task: updated } = await api.patchTask(number, { state: closed ? 'closed' : 'open' })
       setTask(updated)
       board.updateTaskLocal(updated) // keep in cache; the board hides/shows it per the 完了表示 toggle
-      toast({ variant: 'success', title: closing ? '完了にしました' : '未完了に戻しました' })
+      toast({
+        variant: 'success',
+        title: closed ? '完了にしました' : '未完了に戻しました',
+        action: { label: '元に戻す', onAction: () => setClosed(!closed) },
+      })
     } catch (e) {
       toast({ variant: 'error', title: '状態の変更に失敗しました', description: errMsg(e) })
     } finally {
@@ -159,13 +160,27 @@ export function TaskDetail() {
     }
   }
 
+  // No confirm dialog: act immediately and offer Undo, matching 完了にする (P2-08).
   const removeItem = async () => {
+    const prevStatus = task.status // for Undo: re-add to the board at this status
     setActing(true)
     try {
       await api.removeFromBoard(number)
       board.removeTaskLocal(number)
-      toast({ variant: 'success', title: 'ボードから外しました' })
       navigate('/')
+      toast({
+        variant: 'success',
+        title: 'ボードから外しました',
+        action: {
+          label: '元に戻す',
+          onAction: () => {
+            api
+              .setStatus(number, prevStatus)
+              .then(({ task }) => board.updateTaskLocal(task))
+              .catch((e) => toast({ variant: 'error', title: '元に戻せませんでした', description: errMsg(e) }))
+          },
+        },
+      })
     } catch (e) {
       toast({ variant: 'error', title: 'ボードから外すのに失敗しました', description: errMsg(e) })
     } finally {
@@ -321,7 +336,7 @@ export function TaskDetail() {
       {task.state === 'OPEN' ? (
         <div className="space-y-3">
           <div>
-            <Button variant="primary" className="w-full" onClick={toggleClose} disabled={acting}>
+            <Button variant="primary" className="w-full" onClick={() => setClosed(true)} disabled={acting}>
               <CheckCircle2 className="h-4 w-4" />
               完了にする
             </Button>
@@ -332,7 +347,7 @@ export function TaskDetail() {
           </div>
           <div className="border-t border-line/50 pt-3">
             <button
-              onClick={() => setConfirmRemove(true)}
+              onClick={removeItem}
               disabled={acting}
               className="inline-flex items-center gap-1.5 text-sm font-semibold text-bad transition hover:opacity-80 disabled:opacity-50"
             >
@@ -347,7 +362,7 @@ export function TaskDetail() {
         </div>
       ) : (
         <div>
-          <Button variant="primary" className="w-full" onClick={toggleClose} disabled={acting}>
+          <Button variant="primary" className="w-full" onClick={() => setClosed(false)} disabled={acting}>
             <RotateCcw className="h-4 w-4" />
             未完了に戻す
           </Button>
@@ -361,15 +376,6 @@ export function TaskDetail() {
         task={picker ? task : null}
         onClose={() => setPicker(false)}
         onPick={pickStatus}
-      />
-      <ConfirmDialog
-        open={confirmRemove}
-        onOpenChange={setConfirmRemove}
-        title="ボードから外しますか？"
-        description="完了にはせず、ボードのカードだけ消します。タスク自体は GitHub に残るので、あとで戻せます。"
-        confirmLabel="ボードから外す"
-        destructive
-        onConfirm={removeItem}
       />
     </div>
   )

@@ -17,6 +17,7 @@ import {
 import { useBoard } from '../context/BoardContext'
 import { FullSpinner } from '../components/ui/Spinner'
 import { Button } from '../components/ui/Button'
+import { useToast } from '../components/ui/Toast'
 import { EmptyState, ErrorState } from '../components/ui/States'
 import { LabelFilterChips } from '../components/LabelFilterChips'
 import { StatusColumn } from '../components/StatusColumn'
@@ -41,6 +42,7 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
 
 export function Board() {
   const board = useBoard()
+  const toast = useToast()
   const [picker, setPicker] = useState<Task | null>(null)
   const [addStatus, setAddStatus] = useState<Status | null>(null)
   const [labelTarget, setLabelTarget] = useState<Task | null>(null)
@@ -84,7 +86,16 @@ export function Board() {
     if (!picker) return
     const number = picker.number
     setPicker(null)
-    await board.setTaskState(number, 'closed')
+    try {
+      await board.setTaskState(number, 'closed')
+      toast({
+        variant: 'success',
+        title: '完了にしました',
+        action: { label: '元に戻す', onAction: () => void board.setTaskState(number, 'open') },
+      })
+    } catch {
+      /* board.setTaskState already surfaced the error toast */
+    }
   }
 
   const onDragStart = (e: DragStartEvent) => {

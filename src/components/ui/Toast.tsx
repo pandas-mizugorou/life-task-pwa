@@ -3,13 +3,20 @@ import { createContext, useCallback, useContext, useRef, useState } from 'react'
 import { cn } from '../../lib/cn'
 
 type ToastVariant = 'default' | 'success' | 'error'
+type ToastAction = { label: string; onAction: () => void }
 interface ToastItem {
   id: number
   title: string
   description?: string
   variant: ToastVariant
+  action?: ToastAction
 }
-type ToastInput = { title: string; description?: string; variant?: ToastVariant }
+type ToastInput = {
+  title: string
+  description?: string
+  variant?: ToastVariant
+  action?: ToastAction
+}
 
 const ToastCtx = createContext<(t: ToastInput) => void>(() => {})
 
@@ -59,6 +66,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 </RT.Description>
               )}
             </div>
+            {it.action && (
+              <RT.Action altText={it.action.label} asChild>
+                <button
+                  onClick={it.action.onAction}
+                  className="shrink-0 self-center rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-semibold text-ink transition hover:bg-panel2"
+                >
+                  {it.action.label}
+                </button>
+              </RT.Action>
+            )}
           </RT.Root>
         ))}
         <RT.Viewport className="fixed bottom-0 right-0 z-[100] m-4 flex w-[min(92vw,380px)] list-none flex-col gap-2 p-0 outline-none" />
