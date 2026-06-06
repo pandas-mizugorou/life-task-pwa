@@ -16,6 +16,7 @@ import { FullSpinner, Spinner } from '../components/ui/Spinner'
 import { ErrorState } from '../components/ui/States'
 import { LabelToggleChips } from '../components/LabelToggleChips'
 import { CommentList } from '../components/CommentList'
+import { Markdown } from '../components/Markdown'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { useToast } from '../components/ui/Toast'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -23,6 +24,7 @@ import { useBoard } from '../context/BoardContext'
 import * as api from '../lib/api'
 import { STATUS_META } from '../lib/status'
 import { errMsg, haptic } from '../lib/haptics'
+import { useAutoGrow } from '../lib/useAutoGrow'
 import type { Comment, Status, Task } from '../lib/types'
 
 export function TaskDetail() {
@@ -47,6 +49,7 @@ export function TaskDetail() {
   const [saving, setSaving] = useState(false)
   const [acting, setActing] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
+  const bodyRef = useAutoGrow(body) // grow the body editor to fit its content
 
   const load = useCallback(() => {
     if (!validNumber) {
@@ -106,7 +109,7 @@ export function TaskDetail() {
       board.updateTaskLocal(updated)
     } catch (e) {
       setTask(prev)
-      toast({ variant: 'error', title: 'ステータス変更に失敗', description: errMsg(e) })
+      toast({ variant: 'error', title: 'ステータス変更に失敗しました', description: errMsg(e) })
     }
   }
 
@@ -116,6 +119,7 @@ export function TaskDetail() {
     const prev = task
     const objs = next.map((n) => board.labels.find((l) => l.name === n) ?? { name: n, color: '8b97b8' })
     setTask({ ...task, labels: objs })
+    haptic(8)
     try {
       const updated = await board.setTaskLabels(task.number, next)
       setTask(updated)
@@ -134,7 +138,7 @@ export function TaskDetail() {
       setEditing(false)
       toast({ variant: 'success', title: '保存しました' })
     } catch (e) {
-      toast({ variant: 'error', title: '保存に失敗', description: errMsg(e) })
+      toast({ variant: 'error', title: '保存に失敗しました', description: errMsg(e) })
     } finally {
       setSaving(false)
     }
@@ -149,7 +153,7 @@ export function TaskDetail() {
       board.updateTaskLocal(updated) // keep in cache; the board hides/shows it per the 完了表示 toggle
       toast({ variant: 'success', title: closing ? '完了にしました' : '未完了に戻しました' })
     } catch (e) {
-      toast({ variant: 'error', title: '失敗しました', description: errMsg(e) })
+      toast({ variant: 'error', title: '状態の変更に失敗しました', description: errMsg(e) })
     } finally {
       setActing(false)
     }
@@ -163,19 +167,37 @@ export function TaskDetail() {
       toast({ variant: 'success', title: 'ボードから外しました' })
       navigate('/')
     } catch (e) {
-      toast({ variant: 'error', title: '失敗しました', description: errMsg(e) })
+      toast({ variant: 'error', title: 'ボードから外すのに失敗しました', description: errMsg(e) })
     } finally {
       setActing(false)
     }
   }
 
   const addCmt = async (text: string) => {
-    const { comment } = await api.addComment(number, text)
-    setComments((cs) => [...cs, comment])
-    const next = { ...task, commentCount: task.commentCount + 1 }
-    setTask(next)
-    board.updateTaskLocal(next)
-    toast({ variant: 'success', title: 'コメントしました' })
+    // Optimistic: show the comment immediately, reconcile with the server copy on
+    // success, roll back (and toast) on failure. CommentList restores the input text.
+    const tmpId = `tmp-${Date.now()}`
+    const optimistic: Comment = {
+      id: tmpId,
+      author: 'あなた',
+      body: text,
+      createdAt: new Date().toISOString(),
+    }
+    const prevTask = task
+    setComments((cs) => [...cs, optimistic])
+    const bumped = { ...task, commentCount: task.commentCount + 1 }
+    setTask(bumped)
+    board.updateTaskLocal(bumped)
+    try {
+      const { comment } = await api.addComment(number, text)
+      setComments((cs) => cs.map((c) => (c.id === tmpId ? comment : c)))
+    } catch (e) {
+      setComments((cs) => cs.filter((c) => c.id !== tmpId))
+      setTask(prevTask)
+      board.updateTaskLocal(prevTask)
+      toast({ variant: 'error', title: 'コメントに失敗しました', description: errMsg(e) })
+      throw e
+    }
   }
 
   return (
@@ -222,10 +244,11 @@ export function TaskDetail() {
             <div>
               <Label htmlFor="ed-body">本文</Label>
               <Textarea
+                ref={bodyRef}
                 id="ed-body"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
-                className="min-h-[140px]"
+                className="min-h-[140px] max-h-[50vh] resize-none"
               />
             </div>
             <div className="flex gap-2">
@@ -273,9 +296,7 @@ export function TaskDetail() {
               )}
             </div>
             {task.body.trim() ? (
-              <div className="mt-3 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink/90">
-                {task.body}
-              </div>
+              <Markdown className="mt-3">{task.body}</Markdown>
             ) : (
               <p className="mt-3 text-sm text-sub">本文なし</p>
             )}

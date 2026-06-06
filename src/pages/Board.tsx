@@ -257,7 +257,7 @@ export function Board() {
           {board.truncated && (
             <div className="shrink-0 px-4 pt-2">
               <p className="rounded-lg bg-warn/15 px-3 py-1.5 text-center text-xs font-semibold text-warn">
-                タスクが多いため一部のみ表示しています。
+                タスクが多いため一部のみ表示中。ラベルで絞り込むか、設定で「完了したタスクも表示」をオフにすると改善します。
               </p>
             </div>
           )}

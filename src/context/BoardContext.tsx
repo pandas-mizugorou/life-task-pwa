@@ -172,7 +172,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         setTasks((ts) => ts.map((t) => (t.number === number ? task : t)))
       } catch (e) {
         restoreTask(number, prevTask) // surgical rollback
-        toast({ variant: 'error', title: 'ステータス変更に失敗', description: errMsg(e) })
+        toast({ variant: 'error', title: 'ステータス変更に失敗しました', description: errMsg(e) })
       } finally {
         pendingRef.current--
       }
@@ -193,7 +193,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         return task
       } catch (e) {
         restoreTask(number, prevTask) // surgical rollback
-        toast({ variant: 'error', title: 'ラベル更新に失敗', description: errMsg(e) })
+        toast({ variant: 'error', title: 'ラベル更新に失敗しました', description: errMsg(e) })
         throw e
       } finally {
         pendingRef.current--
@@ -220,7 +220,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         restoreTask(number, prevTask) // surgical rollback
         toast({
           variant: 'error',
-          title: state === 'closed' ? '完了に失敗' : '戻すのに失敗',
+          title: '状態の変更に失敗しました',
           description: errMsg(e),
         })
         throw e
@@ -264,7 +264,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         if (effectiveItemId) await api.reorderTask(number, effectiveItemId, afterItemId)
       } catch (e) {
         setTasks(prev) // rollback (restores the full prior order)
-        toast({ variant: 'error', title: '移動に失敗', description: errMsg(e) })
+        toast({ variant: 'error', title: '移動に失敗しました', description: errMsg(e) })
       } finally {
         pendingRef.current--
       }
@@ -273,9 +273,16 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   )
 
   const addTask = useCallback(async (input: NewTask) => {
-    const { task } = await api.addTask(input)
-    setTasks((ts) => [task, ...ts])
-    return task
+    // Guard against the focus/visibility re-sync overwriting the new card before the
+    // server round-trip settles (same pattern as the other mutations).
+    pendingRef.current++
+    try {
+      const { task } = await api.addTask(input)
+      setTasks((ts) => [task, ...ts])
+      return task
+    } finally {
+      pendingRef.current--
+    }
   }, [])
 
   const updateTaskLocal = useCallback((task: Task) => {

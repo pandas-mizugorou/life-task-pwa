@@ -55,7 +55,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           role="status"
           className="bg-warn/15 px-4 py-1.5 text-center text-xs font-semibold text-warn"
         >
-          オフラインです — 変更は保存されません
+          オフラインです — 操作できません（電波の良い場所で再度お試しください）
         </div>
       )}
 

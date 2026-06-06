@@ -3,6 +3,8 @@ import { Send } from 'lucide-react'
 import { Textarea } from './ui/Input'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
+import { Markdown } from './Markdown'
+import { useAutoGrow } from '../lib/useAutoGrow'
 import type { Comment } from '../lib/types'
 
 export function CommentList({
@@ -14,13 +16,17 @@ export function CommentList({
 }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
+  const ref = useAutoGrow(text)
 
   const submit = async () => {
     if (!text.trim() || busy) return
+    const body = text.trim()
+    setText('') // optimistic: clear instantly; restore if the send fails
     setBusy(true)
     try {
-      await onAdd(text.trim())
-      setText('')
+      await onAdd(body)
+    } catch {
+      setText(body) // onAdd (parent) already surfaced the error toast
     } finally {
       setBusy(false)
     }
@@ -36,14 +42,16 @@ export function CommentList({
               <span className="font-semibold text-ink/80">{c.author}</span>
               <span>{fmtDate(c.createdAt)}</span>
             </div>
-            <div className="whitespace-pre-wrap break-words text-sm text-ink/90">{c.body}</div>
+            <Markdown>{c.body}</Markdown>
           </div>
         ))}
       </div>
       <div className="mt-3">
         <Textarea
+          ref={ref}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          className="max-h-[40vh] resize-none"
           onKeyDown={(e) => {
             // Plain Enter = newline (multi-line comments); ⌘/Ctrl+Enter sends.
             // Ignore the Enter that confirms an IME (Japanese) conversion.

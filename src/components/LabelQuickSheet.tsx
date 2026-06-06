@@ -1,6 +1,7 @@
 import { Sheet, SheetContent } from './ui/Sheet'
 import { LabelToggleChips } from './LabelToggleChips'
 import { useBoard } from '../context/BoardContext'
+import { haptic } from '../lib/haptics'
 import type { Task } from '../lib/types'
 
 /** Tap a card's tag button -> toggle its labels here. Applies instantly (optimistic). */
@@ -15,6 +16,7 @@ export function LabelQuickSheet({ task, onClose }: { task: Task | null; onClose:
     const next = selected.includes(name)
       ? selected.filter((n) => n !== name)
       : [...selected, name]
+    haptic(8)
     // board.setTaskLabels surfaces its own error toast; swallow the rejection here.
     void board.setTaskLabels(live.number, next).catch(() => {})
   }

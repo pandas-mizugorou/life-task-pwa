@@ -50,7 +50,7 @@ export function QuickAddSheet({
       toast({ variant: 'success', title: '追加しました' })
       onClose()
     } catch (e) {
-      toast({ variant: 'error', title: '追加に失敗', description: errMsg(e) })
+      toast({ variant: 'error', title: '追加に失敗しました', description: errMsg(e) })
     } finally {
       setBusy(false)
     }
