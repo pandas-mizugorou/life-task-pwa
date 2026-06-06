@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { TASK_PATH_RE, timingSafeEqual } from './index'
+import worker, { TASK_PATH_RE, timingSafeEqual } from './index'
+import type { Env } from './types'
+
+describe('GET /api/health', () => {
+  it('returns ok without authentication', async () => {
+    const res = await worker.fetch(new Request('https://x/api/health'), {} as Env)
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+  })
+  it('does not bypass auth for other routes', async () => {
+    const res = await worker.fetch(new Request('https://x/api/board'), {} as Env)
+    expect(res.status).toBe(401)
+  })
+})
 
 describe('TASK_PATH_RE', () => {
   it('matches a bare task path', () => {

@@ -27,7 +27,11 @@ import type { Comment, Status, Task } from '../lib/types'
 
 export function TaskDetail() {
   const { number: numStr } = useParams()
-  const number = Number(numStr)
+  // Guard malformed deep links (e.g. /task/abc, /task/12.5): only positive integer
+  // ids are valid issue numbers. Invalid ids short-circuit to not-found below
+  // instead of firing a doomed /api/tasks/NaN request.
+  const validNumber = numStr !== undefined && /^\d+$/.test(numStr) && Number(numStr) > 0
+  const number = validNumber ? Number(numStr) : Number.NaN
   const navigate = useNavigate()
   const board = useBoard()
   const toast = useToast()
@@ -45,6 +49,11 @@ export function TaskDetail() {
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   const load = useCallback(() => {
+    if (!validNumber) {
+      setError('タスクが見つかりません')
+      setLoading(false)
+      return Promise.resolve()
+    }
     setLoading(true)
     setError(null)
     return api
@@ -57,7 +66,7 @@ export function TaskDetail() {
       })
       .catch((e) => setError(errMsg(e)))
       .finally(() => setLoading(false))
-  }, [number])
+  }, [number, validNumber])
 
   useEffect(() => {
     load()

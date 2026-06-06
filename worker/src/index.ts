@@ -18,6 +18,11 @@ export default {
     const url = new URL(request.url)
     if (!url.pathname.startsWith('/api/')) return json({ error: 'not found' }, 404, cors)
 
+    // Unauthenticated liveness probe — no secrets, no GitHub call. For uptime monitors.
+    if (url.pathname === '/api/health' && request.method === 'GET') {
+      return json({ ok: true }, 200, cors)
+    }
+
     // ---- auth: constant-time passphrase check, with per-IP throttling of failures ----
     const key = request.headers.get('X-App-Key') ?? ''
     if (!env.APP_PASSPHRASE || !(await timingSafeEqual(key, env.APP_PASSPHRASE))) {
