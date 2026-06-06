@@ -5,6 +5,35 @@ import { errMsg, haptic } from '../lib/haptics'
 import { ACTIVE_STATUSES, STATUS_ORDER } from '../lib/status'
 import type { Label, NewTask, Status, Task } from '../lib/types'
 
+const LABEL_ORDER_KEY = 'ltp-label-order'
+
+function readLabelOrder(): string[] {
+  try {
+    const raw = localStorage.getItem(LABEL_ORDER_KEY)
+    const arr = raw ? JSON.parse(raw) : []
+    return Array.isArray(arr) ? arr.filter((n): n is string => typeof n === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function writeLabelOrder(names: string[]) {
+  localStorage.setItem(LABEL_ORDER_KEY, JSON.stringify(names))
+}
+
+// Apply the user's saved label order. Labels missing from it (e.g. freshly created)
+// fall to the end, keeping GitHub's alphabetical order. GitHub has no label-order
+// concept, so this preference lives only on this device.
+function sortLabelsByOrder(labels: Label[], order: string[]): Label[] {
+  if (order.length === 0) return labels
+  const pos = new Map(order.map((n, i) => [n, i]))
+  return labels.slice().sort((a, b) => {
+    const ai = pos.get(a.name) ?? Infinity
+    const bi = pos.get(b.name) ?? Infinity
+    return ai !== bi ? ai - bi : a.name.localeCompare(b.name)
+  })
+}
+
 interface BoardValue {
   loading: boolean
   error: string | null
@@ -29,6 +58,8 @@ interface BoardValue {
   createLabel: (name: string, color: string) => Promise<void>
   renameLabel: (name: string, patch: { newName?: string; color?: string }) => Promise<void>
   deleteLabel: (name: string) => Promise<void>
+  /** Persist a custom display order for labels (client-side; GitHub has no label order). */
+  reorderLabels: (names: string[]) => void
   setTaskLabels: (number: number, labels: string[]) => Promise<Task>
   /** Closed (completed) tasks, for the 完了済み archive column (populated when showClosed). */
   completed: Task[]
@@ -250,7 +281,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const refreshLabels = useCallback(async () => {
     try {
       const { labels } = await api.getLabels()
-      setLabels(labels)
+      setLabels(sortLabelsByOrder(labels, readLabelOrder()))
     } catch {
       /* labels are non-critical for rendering the board; ignore transient errors */
     }
@@ -271,7 +302,15 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const renameLabel = useCallback(
     async (name: string, patch: { newName?: string; color?: string }) => {
       await api.renameLabel(name, patch)
-      if (labelFilter === name && patch.newName) setLabelFilter(patch.newName)
+      if (patch.newName && patch.newName !== name) {
+        const order = readLabelOrder() // keep the saved order pointing at the renamed label
+        const idx = order.indexOf(name)
+        if (idx >= 0) {
+          order[idx] = patch.newName
+          writeLabelOrder(order)
+        }
+        if (labelFilter === name) setLabelFilter(patch.newName)
+      }
       await Promise.all([refreshLabels(), refresh()]) // names/colors are embedded in tasks
     },
     [refreshLabels, refresh, labelFilter],
@@ -280,11 +319,19 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const deleteLabel = useCallback(
     async (name: string) => {
       await api.deleteLabel(name)
+      const order = readLabelOrder()
+      if (order.includes(name)) writeLabelOrder(order.filter((n) => n !== name)) // prune stale entry
       if (labelFilter === name) setLabelFilter(null)
       await Promise.all([refreshLabels(), refresh()])
     },
     [refreshLabels, refresh, labelFilter],
   )
+
+  const reorderLabels = useCallback((names: string[]) => {
+    writeLabelOrder(names)
+    setLabels((prev) => sortLabelsByOrder(prev, names))
+    haptic(10)
+  }, [])
 
   const byStatus = useMemo(() => {
     const groups = Object.fromEntries(STATUS_ORDER.map((s) => [s, [] as Task[]])) as Record<
@@ -336,6 +383,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         createLabel,
         renameLabel,
         deleteLabel,
+        reorderLabels,
         setTaskLabels,
         completed,
         setTaskState,
