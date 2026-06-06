@@ -46,7 +46,9 @@ interface BoardValue {
   setLabelFilter: (v: string | null) => void
   showClosed: boolean
   setShowClosed: (v: boolean) => void
-  refresh: () => Promise<void>
+  /** Re-fetch the board. Pass `{ background: true }` for the silent focus/visibility
+   *  re-sync (no error toast); explicit refreshes surface failures. */
+  refresh: (opts?: { background?: boolean }) => Promise<void>
   setStatus: (number: number, to: Status) => Promise<void>
   addTask: (input: NewTask) => Promise<Task>
   /** Replace one task in the board cache (after a detail edit). */
@@ -118,21 +120,30 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     setTasks((ts) => ts.map((t) => (t.number === number ? prev : t)))
   }, [])
 
-  const refresh = useCallback(async () => {
-    setError(null)
-    try {
-      const { tasks, truncated } = await api.getBoard(showClosed)
-      setTasks(tasks)
-      setTruncated(!!truncated)
-    } catch (e) {
-      setError(errMsg(e))
-    } finally {
-      setLoading(false)
-    }
-  }, [showClosed])
+  const refresh = useCallback(
+    async (opts?: { background?: boolean }) => {
+      setError(null)
+      try {
+        const { tasks, truncated } = await api.getBoard(showClosed)
+        setTasks(tasks)
+        setTruncated(!!truncated)
+      } catch (e) {
+        setError(errMsg(e))
+        // The board only renders the full ErrorState when empty; with cards already on
+        // screen a failed refresh would be invisible (stale data, no signal). Surface it
+        // — except for the silent focus/visibility re-sync, which would spam while offline.
+        if (!opts?.background && tasksRef.current.length > 0) {
+          toast({ variant: 'error', title: '最新の取得に失敗しました', description: errMsg(e) })
+        }
+      } finally {
+        setLoading(false)
+      }
+    },
+    [showClosed, toast],
+  )
 
   useEffect(() => {
-    refresh()
+    refresh({ background: true })
   }, [refresh])
 
   // Re-sync when the tab/app regains focus (e.g. after editing on desktop).
@@ -140,7 +151,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return
       if (pendingRef.current > 0) return // don't clobber an in-flight optimistic update
-      refresh()
+      refresh({ background: true })
     }
     window.addEventListener('focus', onVisible)
     document.addEventListener('visibilitychange', onVisible)

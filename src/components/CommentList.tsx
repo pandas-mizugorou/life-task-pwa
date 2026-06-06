@@ -44,7 +44,15 @@ export function CommentList({
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="コメントを書く…"
+          onKeyDown={(e) => {
+            // Plain Enter = newline (multi-line comments); ⌘/Ctrl+Enter sends.
+            // Ignore the Enter that confirms an IME (Japanese) conversion.
+            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && !e.nativeEvent.isComposing) {
+              e.preventDefault()
+              void submit()
+            }
+          }}
+          placeholder="コメントを書く…（⌘/Ctrl+Enter で送信）"
         />
         <div className="mt-2 flex justify-end">
           <Button onClick={submit} disabled={busy || !text.trim()} size="sm">

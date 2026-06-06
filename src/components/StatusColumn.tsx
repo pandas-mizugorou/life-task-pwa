@@ -36,9 +36,18 @@ export function StatusColumn({
   const didRestore = useRef(false)
   useLayoutEffect(() => {
     if (didRestore.current || !listRef.current) return
-    listRef.current.scrollTop = boardScroll.tops.get(status) ?? 0
+    const saved = boardScroll.tops.get(status) ?? 0
+    if (saved === 0) {
+      didRestore.current = true
+      return
+    }
+    // Tasks can arrive a tick after mount (returning from a task detail). Don't burn
+    // the one-shot on an empty list — wait until there's content to scroll, retrying
+    // when `tasks` changes, then restore once.
+    if (listRef.current.scrollHeight <= listRef.current.clientHeight) return
+    listRef.current.scrollTop = saved
     didRestore.current = true
-  })
+  }, [tasks, status])
   const setListRef = (el: HTMLDivElement | null) => {
     setNodeRef(el)
     listRef.current = el

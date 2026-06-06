@@ -125,7 +125,7 @@ export function TaskDetail() {
   }
 
   const saveEdit = async () => {
-    if (!title.trim()) return
+    if (!title.trim() || (title === task.title && body === task.body)) return // no change → no write
     setSaving(true)
     try {
       const { task: updated } = await api.patchTask(number, { title: title.trim(), body })
@@ -205,7 +205,19 @@ export function TaskDetail() {
           <div className="space-y-3">
             <div>
               <Label htmlFor="ed-title">タイトル</Label>
-              <Input id="ed-title" value={title} onChange={(e) => setTitle(e.target.value)} />
+              <Input
+                id="ed-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                enterKeyHint="done"
+                onKeyDown={(e) => {
+                  // Enter saves; ignore the Enter that confirms an IME (Japanese) conversion.
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                    e.preventDefault()
+                    saveEdit()
+                  }
+                }}
+              />
             </div>
             <div>
               <Label htmlFor="ed-body">本文</Label>
@@ -217,7 +229,7 @@ export function TaskDetail() {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={saveEdit} disabled={saving || !title.trim()}>
+              <Button onClick={saveEdit} disabled={saving || !title.trim() || !dirty}>
                 {saving ? <Spinner className="h-5 w-5" /> : '保存'}
               </Button>
               <Button
@@ -256,7 +268,7 @@ export function TaskDetail() {
               </button>
               {task.state === 'CLOSED' && (
                 <span className="rounded-full bg-bad/15 px-2 py-0.5 text-[11px] font-semibold text-bad">
-                  クローズ済み
+                  完了済み
                 </span>
               )}
             </div>

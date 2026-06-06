@@ -16,9 +16,16 @@ export function CompletedColumn({ tasks }: { tasks: Task[] }) {
   const didRestore = useRef(false)
   useLayoutEffect(() => {
     if (didRestore.current || !listRef.current) return
-    listRef.current.scrollTop = boardScroll.tops.get(COMPLETED_KEY) ?? 0
+    const saved = boardScroll.tops.get(COMPLETED_KEY) ?? 0
+    if (saved === 0) {
+      didRestore.current = true
+      return
+    }
+    // Wait for content (tasks may arrive after mount) before consuming the one-shot.
+    if (listRef.current.scrollHeight <= listRef.current.clientHeight) return
+    listRef.current.scrollTop = saved
     didRestore.current = true
-  })
+  }, [tasks])
   return (
     <section className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col">
       <div className="mb-2 flex items-center gap-2 px-1">

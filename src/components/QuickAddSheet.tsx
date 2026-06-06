@@ -72,6 +72,11 @@ export function QuickAddSheet({
               autoFocus
               value={title}
               onChange={(e) => setTitle(e.target.value)}
+              onKeyDown={(e) => {
+                // Don't let the Enter that confirms an IME (Japanese) conversion submit the form.
+                if (e.key === 'Enter' && e.nativeEvent.isComposing) e.preventDefault()
+              }}
+              enterKeyHint="done"
               placeholder="何をする？"
             />
           </div>
