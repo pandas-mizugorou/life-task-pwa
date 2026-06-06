@@ -56,7 +56,7 @@ export function Board() {
 
   // Pull down (when a column is at the top) to refresh; disabled while dragging a card.
   const boardRef = useRef<HTMLDivElement>(null)
-  const { pull, refreshing } = usePullToRefresh(boardRef, board.refresh, activeTask !== null)
+  const { pull, refreshing, armed } = usePullToRefresh(boardRef, board.refresh, activeTask !== null)
 
   if (board.loading && board.tasks.length === 0) return <FullSpinner label="ボードを読み込み中…" />
   if (board.error && board.tasks.length === 0)
@@ -179,41 +179,39 @@ export function Board() {
   }
 
   return (
-    <div ref={boardRef} className="relative flex h-full flex-col">
+    <div ref={boardRef} className="relative flex h-full flex-col overflow-hidden">
       {(pull > 0 || refreshing) && (
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center"
           style={{
-            transform: `translateY(${refreshing ? 20 : Math.min(pull, 96) - 30}px)`,
-            opacity: refreshing ? 1 : Math.min(pull / 40, 1),
+            transform: `translateY(${refreshing ? 10 : Math.max(pull - 44, -44)}px)`,
+            opacity: refreshing ? 1 : Math.min(pull / 48, 1),
           }}
         >
-          <div className="mt-1 rounded-full border border-line bg-panel2 p-2 shadow-lg">
+          <div className="mt-2 flex items-center gap-2 rounded-full border border-line bg-panel2/95 px-3 py-1.5 shadow-lg backdrop-blur">
             <RefreshCw
-              className={cn('h-4 w-4 text-accent2', refreshing && 'animate-spin')}
-              style={refreshing ? undefined : { transform: `rotate(${pull * 4}deg)` }}
+              className={cn(
+                'h-4 w-4 transition-colors',
+                refreshing ? 'animate-spin text-accent2' : armed ? 'text-accent2' : 'text-sub',
+              )}
+              style={refreshing ? undefined : { transform: `rotate(${Math.min(pull * 2.4, 200)}deg)` }}
             />
+            <span
+              className={cn(
+                'text-[11px] font-semibold transition-colors',
+                armed || refreshing ? 'text-accent2' : 'text-sub',
+              )}
+            >
+              {refreshing ? '更新中…' : armed ? '離して更新' : '引っ張って更新'}
+            </span>
           </div>
-        </div>
-      )}
-      <div className="shrink-0 px-4 pt-4">
-        <LabelFilterChips
-          value={board.labelFilter}
-          onChange={board.setLabelFilter}
-          labels={board.labels}
-        />
-      </div>
-
-      {board.truncated && (
-        <div className="shrink-0 px-4 pt-2">
-          <p className="rounded-lg bg-warn/15 px-3 py-1.5 text-center text-xs font-semibold text-warn">
-            タスクが多いため一部のみ表示しています。
-          </p>
         </div>
       )}
 
       {/* Horizontal kanban. Long-press a card to drag it between columns; quick swipes
-          still scroll. Snap is disabled while dragging so auto-scroll stays smooth. */}
+          still scroll. Snap is disabled while dragging so auto-scroll stays smooth.
+          DragOverlay stays OUTSIDE the pull-translated wrapper so its fixed
+          positioning is measured against the viewport, not a transformed ancestor. */}
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetectionStrategy}
@@ -225,50 +223,76 @@ export function Board() {
           setOverColumn(null)
         }}
       >
-        {board.total === 0 && !(board.showClosed && board.completed.length > 0) ? (
-          <div className="flex min-h-0 flex-1 items-center justify-center px-6">
-            {board.labelFilter ? (
-              <EmptyState
-                icon="🏷️"
-                title="このラベルのタスクはありません"
-                description="別のラベルを選ぶか、フィルタを解除してください。"
-                action={
-                  <Button variant="secondary" onClick={() => board.setLabelFilter(null)}>
-                    フィルタを解除
-                  </Button>
-                }
-              />
-            ) : (
-              <EmptyState
-                icon="🗒️"
-                title="タスクがありません"
-                description="最初のタスクを追加して始めましょう。"
-                action={<Button onClick={() => setAddStatus('Backlog')}>＋ タスクを追加</Button>}
-              />
-            )}
+        {/* Content physically follows the finger while pulling, then springs back. */}
+        <div
+          className="flex min-h-0 flex-1 flex-col"
+          style={{
+            transform: `translateY(${refreshing ? 48 : pull}px)`,
+            transition: pull > 0 ? 'none' : 'transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)',
+            willChange: 'transform',
+          }}
+        >
+          <div className="shrink-0 px-4 pt-4">
+            <LabelFilterChips
+              value={board.labelFilter}
+              onChange={board.setLabelFilter}
+              labels={board.labels}
+            />
           </div>
-        ) : (
-          <div
-            className={cn(
-              'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',
-              !activeTask && 'snap-x snap-proximity',
-            )}
-          >
-            {ACTIVE_STATUSES.map((s) => (
-              <StatusColumn
-                key={s}
-                status={s}
-                tasks={board.byStatus[s]}
-                isTarget={overColumn === s}
-                lineIndex={dropIndicator && dropIndicator.col === s ? dropIndicator.index : null}
-                onStatusTap={setPicker}
-                onLabelTap={setLabelTarget}
-                onAdd={setAddStatus}
-              />
-            ))}
-            {board.showClosed && <CompletedColumn tasks={board.completed} />}
-          </div>
-        )}
+
+          {board.truncated && (
+            <div className="shrink-0 px-4 pt-2">
+              <p className="rounded-lg bg-warn/15 px-3 py-1.5 text-center text-xs font-semibold text-warn">
+                タスクが多いため一部のみ表示しています。
+              </p>
+            </div>
+          )}
+
+          {board.total === 0 && !(board.showClosed && board.completed.length > 0) ? (
+            <div className="flex min-h-0 flex-1 items-center justify-center px-6">
+              {board.labelFilter ? (
+                <EmptyState
+                  icon="🏷️"
+                  title="このラベルのタスクはありません"
+                  description="別のラベルを選ぶか、フィルタを解除してください。"
+                  action={
+                    <Button variant="secondary" onClick={() => board.setLabelFilter(null)}>
+                      フィルタを解除
+                    </Button>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  icon="🗒️"
+                  title="タスクがありません"
+                  description="最初のタスクを追加して始めましょう。"
+                  action={<Button onClick={() => setAddStatus('Backlog')}>＋ タスクを追加</Button>}
+                />
+              )}
+            </div>
+          ) : (
+            <div
+              className={cn(
+                'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',
+                !activeTask && 'snap-x snap-proximity',
+              )}
+            >
+              {ACTIVE_STATUSES.map((s) => (
+                <StatusColumn
+                  key={s}
+                  status={s}
+                  tasks={board.byStatus[s]}
+                  isTarget={overColumn === s}
+                  lineIndex={dropIndicator && dropIndicator.col === s ? dropIndicator.index : null}
+                  onStatusTap={setPicker}
+                  onLabelTap={setLabelTarget}
+                  onAdd={setAddStatus}
+                />
+              ))}
+              {board.showClosed && <CompletedColumn tasks={board.completed} />}
+            </div>
+          )}
+        </div>
 
         <DragOverlay dropAnimation={null}>
           {activeTask ? (
