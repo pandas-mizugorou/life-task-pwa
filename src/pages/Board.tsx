@@ -229,7 +229,10 @@ export function Board() {
           style={{
             transform: `translateY(${refreshing ? 48 : pull}px)`,
             transition: pull > 0 ? 'none' : 'transform 0.34s cubic-bezier(0.22, 1, 0.36, 1)',
-            willChange: 'transform',
+            // Only force a compositor layer while actually pulling — a permanent
+            // will-change here promotes the whole board and makes the inner
+            // horizontal scroll repaint heavily (= the "not smooth" feel).
+            willChange: pull > 0 || refreshing ? 'transform' : undefined,
           }}
         >
           <div className="shrink-0 px-4 pt-4">
@@ -276,6 +279,8 @@ export function Board() {
                 'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',
                 !activeTask && 'snap-x snap-proximity',
               )}
+              // Momentum/inertia scrolling on iOS so a flick glides instead of stopping dead.
+              style={{ WebkitOverflowScrolling: 'touch' }}
             >
               {ACTIVE_STATUSES.map((s) => (
                 <StatusColumn

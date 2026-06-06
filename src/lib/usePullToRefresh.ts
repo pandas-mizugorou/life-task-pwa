@@ -35,6 +35,7 @@ export function usePullToRefresh(
   const g = useRef({
     active: false,
     startY: 0,
+    startX: 0,
     dist: 0,
     armed: false,
     scroller: null as HTMLElement | null,
@@ -72,13 +73,24 @@ export function usePullToRefresh(
       if (disabledRef.current || refreshingRef.current || e.touches.length !== 1) return
       const scroller = scrollerOf(e.target)
       if (scroller && scroller.scrollTop > 0) return // mid-scroll, not a pull
-      g.current = { active: true, startY: e.touches[0].clientY, dist: 0, armed: false, scroller }
+      g.current = {
+        active: true,
+        startY: e.touches[0].clientY,
+        startX: e.touches[0].clientX,
+        dist: 0,
+        armed: false,
+        scroller,
+      }
     }
     const onMove = (e: TouchEvent) => {
       if (!g.current.active) return
       if (disabledRef.current) return reset()
       if (g.current.scroller && g.current.scroller.scrollTop > 0) return reset()
       const dy = e.touches[0].clientY - g.current.startY
+      const dx = e.touches[0].clientX - g.current.startX
+      // Horizontal swipe (kanban column paging) → hand it back to the native scroller
+      // and stay out of the way, so left/right scrolling stays smooth.
+      if (g.current.dist === 0 && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6) return reset()
       if (dy <= 0) {
         g.current.dist = 0
         g.current.armed = false
