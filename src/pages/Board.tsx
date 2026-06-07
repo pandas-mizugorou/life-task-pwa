@@ -15,7 +15,7 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { useBoard } from '../context/BoardContext'
-import { FullSpinner } from '../components/ui/Spinner'
+import { BoardSkeleton } from '../components/Skeletons'
 import { Button } from '../components/ui/Button'
 import { useToast } from '../components/ui/Toast'
 import { EmptyState, ErrorState } from '../components/ui/States'
@@ -71,7 +71,7 @@ export function Board() {
     didRestore.current = true
   })
 
-  if (board.loading && board.tasks.length === 0) return <FullSpinner label="ボードを読み込み中…" />
+  if (board.loading && board.tasks.length === 0) return <BoardSkeleton />
   if (board.error && board.tasks.length === 0)
     return <ErrorState message={board.error} onRetry={board.refresh} />
 
@@ -273,7 +273,9 @@ export function Board() {
             </div>
           )}
 
-          {board.total === 0 && !(board.showClosed && board.completed.length > 0) ? (
+          {board.total === 0 &&
+          !(board.showClosed && board.completed.length > 0) &&
+          !board.closedLoading ? (
             <div className="flex min-h-0 flex-1 items-center justify-center px-6">
               {board.labelFilter ? (
                 <EmptyState
@@ -320,7 +322,9 @@ export function Board() {
                   onAdd={setAddStatus}
                 />
               ))}
-              {board.showClosed && <CompletedColumn tasks={board.completed} />}
+              {board.showClosed && (
+                <CompletedColumn tasks={board.completed} loading={board.closedLoading} />
+              )}
             </div>
           )}
         </div>

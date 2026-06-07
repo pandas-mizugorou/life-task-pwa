@@ -4,12 +4,13 @@ import { useNavigate } from 'react-router-dom'
 import { boardScroll } from '../lib/boardScroll'
 import type { Task } from '../lib/types'
 import { TaskCardView } from './TaskCardView'
+import { CardSkeleton } from './Skeletons'
 
 const COMPLETED_KEY = '__completed__'
 
 /** Read-only archive column of completed (closed) tasks. Tap a card to open it
  *  (where it can be reopened with 未完了に戻す). Not a drag/drop target. */
-export function CompletedColumn({ tasks }: { tasks: Task[] }) {
+export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: boolean }) {
   const navigate = useNavigate()
   // Remember this column's vertical scroll across the task-detail route remount.
   const listRef = useRef<HTMLDivElement>(null)
@@ -42,7 +43,12 @@ export function CompletedColumn({ tasks }: { tasks: Task[] }) {
         }}
         className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl bg-panel2/30 p-2 pb-4"
       >
-        {tasks.length ? (
+        {loading && tasks.length === 0 ? (
+          <div className="animate-pulse space-y-2">
+            <CardSkeleton />
+            <CardSkeleton />
+          </div>
+        ) : tasks.length ? (
           tasks.map((t) => (
             <TaskCardView
               key={t.number}

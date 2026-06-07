@@ -46,6 +46,8 @@ interface BoardValue {
   setLabelFilter: (v: string | null) => void
   showClosed: boolean
   setShowClosed: (v: boolean) => void
+  /** True while the first fetch after enabling 完了表示 is in flight (closed column loading). */
+  closedLoading: boolean
   /** Re-fetch the board. Pass `{ background: true }` for the silent focus/visibility
    *  re-sync (no error toast); explicit refreshes surface failures. */
   refresh: (opts?: { background?: boolean }) => Promise<void>
@@ -97,8 +99,12 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const [showClosed, setShowClosedState] = useState<boolean>(
     () => localStorage.getItem('ltp-show-closed') === '1',
   )
+  // True while the refresh triggered by enabling 完了表示 is fetching, so the
+  // completed column can show a loading state instead of popping in late.
+  const [closedLoading, setClosedLoading] = useState(false)
   const setShowClosed = useCallback((v: boolean) => {
     localStorage.setItem('ltp-show-closed', v ? '1' : '0')
+    if (v) setClosedLoading(true)
     setShowClosedState(v)
   }, [])
 
@@ -137,6 +143,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         }
       } finally {
         setLoading(false)
+        setClosedLoading(false)
       }
     },
     [showClosed, toast],
@@ -391,6 +398,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
         setLabelFilter,
         showClosed,
         setShowClosed,
+        closedLoading,
         refresh,
         setStatus,
         addTask,

@@ -12,8 +12,9 @@ import {
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input, Label, Textarea } from '../components/ui/Input'
-import { FullSpinner, Spinner } from '../components/ui/Spinner'
+import { Spinner } from '../components/ui/Spinner'
 import { EmptyState, ErrorState } from '../components/ui/States'
+import { TaskDetailSkeleton } from '../components/Skeletons'
 import { LabelToggleChips } from '../components/LabelToggleChips'
 import { CommentList } from '../components/CommentList'
 import { Markdown } from '../components/Markdown'
@@ -102,7 +103,7 @@ export function TaskDetail() {
     return () => setUnsaved(false)
   }, [editing, title, body, task])
 
-  if (loading) return <FullSpinner label="読み込み中…" />
+  if (loading) return <TaskDetailSkeleton />
   if (notFound)
     return (
       <div className="grid h-full place-items-center px-4">
