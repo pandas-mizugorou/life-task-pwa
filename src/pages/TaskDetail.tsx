@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -24,6 +24,8 @@ import * as api from '../lib/api'
 import { STATUS_META } from '../lib/status'
 import { errMsg, haptic } from '../lib/haptics'
 import { useAutoGrow } from '../lib/useAutoGrow'
+import { useScrollTop } from '../lib/useScrollTop'
+import { setUnsaved } from '../lib/unsavedGuard'
 import type { Comment, Status, Task } from '../lib/types'
 
 export function TaskDetail() {
@@ -48,6 +50,8 @@ export function TaskDetail() {
   const [saving, setSaving] = useState(false)
   const [acting, setActing] = useState(false)
   const bodyRef = useAutoGrow(body) // grow the body editor to fit its content
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useScrollTop(scrollRef, number) // reset to top when switching to another task
 
   const load = useCallback(() => {
     if (!validNumber) {
@@ -83,6 +87,13 @@ export function TaskDetail() {
     }
     window.addEventListener('beforeunload', onBeforeUnload)
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [editing, title, body, task])
+
+  // Mirror dirty state into the global guard so the PWA update prompt won't
+  // force-reload over unsaved edits (it can't reach this component's state).
+  useEffect(() => {
+    setUnsaved(editing && !!task && (title !== task.title || body !== task.body))
+    return () => setUnsaved(false)
   }, [editing, title, body, task])
 
   if (loading) return <FullSpinner label="読み込み中…" />
@@ -216,7 +227,10 @@ export function TaskDetail() {
   }
 
   return (
-    <div className="mx-auto h-full max-w-2xl space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-28 pt-4">
+    <div
+      ref={scrollRef}
+      className="mx-auto h-full max-w-2xl space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-28 pt-4"
+    >
       <div className="flex items-center gap-2">
         <button
           onClick={goBack}

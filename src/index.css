@@ -49,6 +49,9 @@
   --status-inprogress: var(--warn);
   --status-pending: #a371f7;
   --status-done: var(--good);
+  /* Bottom nav content height (excludes the safe-area inset, which the nav adds
+     separately). Shared so overlays can clear the nav without double-counting the inset. */
+  --nav-h: 62px;
   color-scheme: dark;
 }
 

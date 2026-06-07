@@ -1,18 +1,31 @@
 import { useEffect, useState } from 'react'
 import { ListChecks, RefreshCw, Settings as SettingsIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { NavLink } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
 import { useBoard } from '../context/BoardContext'
 
+// Sub-routes light up their parent tab so the user never looks "lost" in the PWA:
+// /t/:number belongs to the board, /labels belongs to settings.
 const NAV = [
-  { to: '/', label: 'ボード', icon: ListChecks, end: true },
-  { to: '/settings', label: '設定', icon: SettingsIcon, end: false },
+  {
+    to: '/',
+    label: 'ボード',
+    icon: ListChecks,
+    match: (p: string) => p === '/' || p.startsWith('/t/'),
+  },
+  {
+    to: '/settings',
+    label: '設定',
+    icon: SettingsIcon,
+    match: (p: string) => p.startsWith('/settings') || p.startsWith('/labels'),
+  },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { refresh, loading } = useBoard()
+  const { pathname } = useLocation()
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
   useEffect(() => {
     const goOnline = () => setOnline(true)
@@ -69,29 +82,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto grid max-w-2xl grid-cols-2">
           {NAV.map((n) => {
             const Icon = n.icon
+            const isActive = n.match(pathname)
             return (
-              <NavLink key={n.to} to={n.to} end={n.end} className="relative" onClick={() => haptic(8)}>
-                {({ isActive }) => (
-                  <div className="relative flex flex-col items-center gap-1 py-2.5">
-                    {isActive && (
-                      <motion.span
-                        layoutId="nav-pill"
-                        className="absolute inset-x-10 inset-y-1 rounded-2xl bg-accent2/12"
-                        transition={{ type: 'spring', stiffness: 480, damping: 38 }}
-                        aria-hidden
-                      />
-                    )}
-                    <Icon
-                      className={cn('relative h-[22px] w-[22px] transition-colors', isActive ? 'text-accent2' : 'text-sub')}
+              <Link
+                key={n.to}
+                to={n.to}
+                className="relative"
+                onClick={() => haptic(8)}
+                aria-current={isActive ? 'page' : undefined}
+              >
+                <div className="relative flex flex-col items-center gap-1 py-2.5">
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-pill"
+                      className="absolute inset-x-10 inset-y-1 rounded-2xl bg-accent2/12"
+                      transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+                      aria-hidden
                     />
-                    <span
-                      className={cn('relative text-[11px] font-semibold transition-colors', isActive ? 'text-accent2' : 'text-sub')}
-                    >
-                      {n.label}
-                    </span>
-                  </div>
-                )}
-              </NavLink>
+                  )}
+                  <Icon
+                    className={cn('relative h-[22px] w-[22px] transition-colors', isActive ? 'text-accent2' : 'text-sub')}
+                  />
+                  <span
+                    className={cn('relative text-[11px] font-semibold transition-colors', isActive ? 'text-accent2' : 'text-sub')}
+                  >
+                    {n.label}
+                  </span>
+                </div>
+              </Link>
             )
           })}
         </div>
