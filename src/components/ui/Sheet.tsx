@@ -42,7 +42,7 @@ export function SheetContent({
           <div className="min-w-0">
             <RD.Title className="text-lg font-bold text-ink">{title}</RD.Title>
             {description ? (
-              <RD.Description className="mt-1 line-clamp-2 text-sm text-sub">
+              <RD.Description className="mt-1 line-clamp-3 text-sm text-sub">
                 {description}
               </RD.Description>
             ) : (

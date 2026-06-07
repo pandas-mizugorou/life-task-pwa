@@ -1,9 +1,12 @@
 import { forwardRef } from 'react'
-import { MessageSquare, Tag } from 'lucide-react'
+import { CheckCircle2, MessageSquare, Tag } from 'lucide-react'
 import { cn } from '../lib/cn'
 import { STATUS_META } from '../lib/status'
 import type { Task } from '../lib/types'
 import { LabelChip } from './LabelChip'
+
+/** Max labels shown on a card before collapsing the rest into a "+N" chip. */
+const MAX_LABELS = 3
 
 interface Props extends React.HTMLAttributes<HTMLDivElement> {
   task: Task
@@ -11,14 +14,17 @@ interface Props extends React.HTMLAttributes<HTMLDivElement> {
   onLabelTap?: (t: Task) => void
   onOpen?: () => void
   dragging?: boolean
+  /** Render a "完了" badge (used by the archive column; gives SR/low-vision a text cue). */
+  completed?: boolean
 }
 
 /** Presentational task card. Used directly inside columns and in the DragOverlay. */
 export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardView(
-  { task, onStatusTap, onLabelTap, onOpen, dragging, className, ...rest },
+  { task, onStatusTap, onLabelTap, onOpen, dragging, completed, className, ...rest },
   ref,
 ) {
   const meta = STATUS_META[task.status]
+  const hiddenLabels = task.labels.length - MAX_LABELS
   return (
     <div
       ref={ref}
@@ -43,6 +49,11 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
       <div className="min-w-0 flex-1">
         <div className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{task.title}</div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
+          {completed && (
+            <span className="inline-flex items-center gap-0.5 rounded-full bg-good/15 px-1.5 py-0.5 text-[10px] font-semibold text-good">
+              <CheckCircle2 className="h-3 w-3" aria-hidden /> 完了
+            </span>
+          )}
           {onLabelTap && (
             <button
               onClick={(e) => {
@@ -56,9 +67,17 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
               <Tag className="h-3.5 w-3.5" />
             </button>
           )}
-          {task.labels.map((l) => (
+          {task.labels.slice(0, MAX_LABELS).map((l) => (
             <LabelChip key={l.name} label={l} />
           ))}
+          {hiddenLabels > 0 && (
+            <span
+              className="text-[11px] font-semibold text-sub"
+              aria-label={`ほか ${hiddenLabels} 件のラベル`}
+            >
+              +{hiddenLabels}
+            </span>
+          )}
           {task.commentCount > 0 && (
             <span className="inline-flex items-center gap-0.5 text-[11px] text-sub">
               <MessageSquare className="h-3 w-3" /> {task.commentCount}

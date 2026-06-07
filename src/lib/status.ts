@@ -10,11 +10,35 @@ export const STATUS_ORDER: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pendin
  */
 export const ACTIVE_STATUSES: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pending']
 
-/** Visual treatment per status (dot color + soft tint for active pills). */
+/**
+ * Visual treatment per status (dot color + soft tint for active pills).
+ * Colours come from CSS variables defined in index.css (single source of truth),
+ * so the board stays in sync with the theme. Tints are derived via color-mix.
+ */
 export const STATUS_META: Record<Status, { label: string; dot: string; tint: string }> = {
-  Backlog: { label: 'Backlog', dot: '#8b949e', tint: 'rgba(139,148,158,0.16)' },
-  Todo: { label: 'Todo', dot: '#539bf5', tint: 'rgba(83,155,245,0.16)' },
-  'In Progress': { label: 'In Progress', dot: '#e3b341', tint: 'rgba(227,179,65,0.18)' },
-  Pending: { label: 'Pending', dot: '#a371f7', tint: 'rgba(163,113,247,0.18)' },
-  Done: { label: 'Done', dot: '#3fb950', tint: 'rgba(63,185,80,0.16)' },
+  Backlog: {
+    label: 'Backlog',
+    dot: 'var(--status-backlog)',
+    tint: 'color-mix(in srgb, var(--status-backlog) 16%, transparent)',
+  },
+  Todo: {
+    label: 'Todo',
+    dot: 'var(--status-todo)',
+    tint: 'color-mix(in srgb, var(--status-todo) 16%, transparent)',
+  },
+  'In Progress': {
+    label: 'In Progress',
+    dot: 'var(--status-inprogress)',
+    tint: 'color-mix(in srgb, var(--status-inprogress) 18%, transparent)',
+  },
+  Pending: {
+    label: 'Pending',
+    dot: 'var(--status-pending)',
+    tint: 'color-mix(in srgb, var(--status-pending) 18%, transparent)',
+  },
+  Done: {
+    label: 'Done',
+    dot: 'var(--status-done)',
+    tint: 'color-mix(in srgb, var(--status-done) 16%, transparent)',
+  },
 }

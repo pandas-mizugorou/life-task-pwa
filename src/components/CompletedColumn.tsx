@@ -47,6 +47,7 @@ export function CompletedColumn({ tasks }: { tasks: Task[] }) {
             <TaskCardView
               key={t.number}
               task={t}
+              completed
               onOpen={() => navigate(`/t/${t.number}`)}
               className="opacity-75"
             />

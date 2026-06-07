@@ -41,6 +41,14 @@
   --grad: linear-gradient(135deg, #f0f3f6, #d8dee6);
   --bg-radial: radial-gradient(1100px 760px at 80% -10%, #161b22 0, transparent 60%);
   --card-shadow: 0 1px 2px rgba(1, 4, 9, 0.3);
+  /* Board status accent colours — single source of truth for STATUS_META
+     (src/lib/status.ts references these so the board never drifts from the theme).
+     In Progress reuses --warn, Done reuses --good, Backlog reuses --sub. */
+  --status-backlog: var(--sub);
+  --status-todo: #539bf5;
+  --status-inprogress: var(--warn);
+  --status-pending: #a371f7;
+  --status-done: var(--good);
   color-scheme: dark;
 }
 
