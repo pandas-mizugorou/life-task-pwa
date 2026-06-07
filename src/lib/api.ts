@@ -21,6 +21,27 @@ export function getWorkerUrl(): string {
 export function setWorkerUrl(u: string) {
   localStorage.setItem(URL_STORAGE, u.trim().replace(/\/+$/, ''))
 }
+
+/**
+ * Validate + normalize a user-entered Worker URL. Accepts a bare host (prepends
+ * https://), requires https, and reduces to the origin (Workers serve the API at
+ * root). Returns the cleaned URL or a human-readable error — so a malformed value
+ * is rejected up front instead of failing mysteriously at the auth gate later.
+ */
+export function normalizeWorkerUrl(input: string): { url: string } | { error: string } {
+  let s = input.trim()
+  if (!s) return { error: 'URL を入力してください' }
+  if (!/^https?:\/\//i.test(s)) s = 'https://' + s
+  let u: URL
+  try {
+    u = new URL(s)
+  } catch {
+    return { error: 'URL の形式が正しくありません' }
+  }
+  if (u.protocol !== 'https:') return { error: 'https:// で始まる URL を入力してください' }
+  if (!u.hostname.includes('.')) return { error: 'URL の形式が正しくありません' }
+  return { url: u.origin }
+}
 export function getKey(): string {
   return localStorage.getItem(KEY_STORAGE) || ''
 }

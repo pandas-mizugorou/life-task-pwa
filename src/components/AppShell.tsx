@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
+import { useAuth } from '../context/AuthContext'
 import { useBoard } from '../context/BoardContext'
 
 // Sub-routes light up their parent tab so the user never looks "lost" in the PWA:
@@ -25,6 +26,7 @@ const NAV = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { refresh, loading } = useBoard()
+  const { unverified } = useAuth()
   const { pathname } = useLocation()
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
   useEffect(() => {
@@ -69,6 +71,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           className="bg-warn/15 px-4 py-1.5 text-center text-xs font-semibold text-warn"
         >
           オフラインです — 操作できません（電波の良い場所で再度お試しください）
+        </div>
+      )}
+
+      {online && unverified && (
+        <div
+          role="status"
+          className="bg-panel2 px-4 py-1.5 text-center text-xs font-semibold text-sub"
+        >
+          オフライン中に起動したため、接続を確認しています…
         </div>
       )}
 

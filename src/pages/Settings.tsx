@@ -16,8 +16,13 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
   const [url, setUrl] = useState(workerUrl)
 
   const save = () => {
-    if (!url.trim()) return
-    saveWorkerUrl(url)
+    const res = api.normalizeWorkerUrl(url)
+    if ('error' in res) {
+      toast({ variant: 'error', title: res.error })
+      return
+    }
+    setUrl(res.url) // reflect the cleaned URL back into the field
+    saveWorkerUrl(res.url)
     toast({ variant: 'success', title: '接続先を保存しました' })
   }
 
