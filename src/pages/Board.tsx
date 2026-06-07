@@ -61,15 +61,15 @@ export function Board() {
   const boardRef = useRef<HTMLDivElement>(null)
   const { pull, refreshing, armed } = usePullToRefresh(boardRef, board.refresh, activeTask !== null)
 
-  // Restore the saved horizontal scroll once the columns have mounted (runs each
-  // render until it lands, so it also covers a cold load -> data -> columns).
+  // Restore the saved horizontal scroll once the columns exist. Keyed on task count
+  // so it retries when data arrives after a cold load (not every render), then locks.
   const columnsRef = useRef<HTMLDivElement>(null)
   const didRestore = useRef(false)
   useLayoutEffect(() => {
     if (didRestore.current || !columnsRef.current) return
     columnsRef.current.scrollLeft = boardScroll.left
     didRestore.current = true
-  })
+  }, [board.tasks.length])
 
   if (board.loading && board.tasks.length === 0) return <BoardSkeleton />
   if (board.error && board.tasks.length === 0)

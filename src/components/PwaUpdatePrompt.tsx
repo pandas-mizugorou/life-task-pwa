@@ -6,13 +6,13 @@ import { hasUnsaved } from '../lib/unsavedGuard'
 
 /** Bottom prompt shown when a new app version is available. Tap to update. */
 export function PwaUpdatePrompt() {
+  const swRef = useRef<ServiceWorkerRegistration | undefined>(undefined)
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,
   } = useRegisterSW({
     onRegisteredSW(_swUrl, r) {
-      // hourly background check for updates
-      if (r) setInterval(() => r.update(), 60 * 60 * 1000)
+      swRef.current = r
     },
   })
 
@@ -22,12 +22,21 @@ export function PwaUpdatePrompt() {
   useEffect(() => {
     if (needRefresh) pending.current = true
   }, [needRefresh])
+
+  // Check for a new version hourly AND when the app returns to the foreground; re-show
+  // a deferred prompt on foreground. Interval/listener are cleaned up on unmount.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible' && pending.current) setNeedRefresh(true)
+      if (document.visibilityState !== 'visible') return
+      if (pending.current) setNeedRefresh(true)
+      swRef.current?.update()
     }
+    const id = setInterval(() => swRef.current?.update(), 60 * 60 * 1000)
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [setNeedRefresh])
 
   const applyUpdate = () => {
