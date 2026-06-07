@@ -19,6 +19,7 @@ export default defineConfig({
         'icon-512-maskable.png',
       ],
       manifest: {
+        id: '/',
         name: 'Lifeタスク',
         short_name: 'Lifeタスク',
         description: 'GitHub Issues + Projects のタスクをスマホから管理する',

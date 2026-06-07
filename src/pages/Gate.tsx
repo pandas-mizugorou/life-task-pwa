@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, KeyRound } from 'lucide-react'
+import { Check, Eye, EyeOff, KeyRound } from 'lucide-react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input, Label } from '../components/ui/Input'
@@ -10,6 +10,7 @@ import { errMsg } from '../lib/haptics'
 export function Gate() {
   const { unlock } = useAuth()
   const [pass, setPass] = useState('')
+  const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
@@ -40,15 +41,27 @@ export function Gate() {
         <Card>
           <form onSubmit={submit}>
             <Label htmlFor="pass">合言葉</Label>
-            <Input
-              id="pass"
-              type="password"
-              autoComplete="current-password"
-              autoFocus
-              value={pass}
-              onChange={(e) => setPass(e.target.value)}
-              placeholder="合言葉"
-            />
+            <div className="relative">
+              <Input
+                id="pass"
+                type={show ? 'text' : 'password'}
+                autoComplete="current-password"
+                autoFocus
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+                placeholder="合言葉"
+                className="pr-12"
+              />
+              <button
+                type="button"
+                onClick={() => setShow((s) => !s)}
+                aria-label={show ? '合言葉を隠す' : '合言葉を表示'}
+                aria-pressed={show}
+                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-lg p-2.5 text-sub transition hover:text-ink"
+              >
+                {show ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
             {err && <p className="mt-2 text-sm text-bad">{err}</p>}
             <Button type="submit" className="mt-4 w-full" disabled={busy || !pass.trim()}>
               {busy ? <Spinner className="h-5 w-5" /> : 'ロックを解除'}

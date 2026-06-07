@@ -53,16 +53,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </span>
             <span className="text-ink">Lifeタスク</span>
           </div>
-          <button
-            onClick={() => {
-              haptic(8)
-              refresh()
-            }}
-            className="ml-auto rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
-            aria-label="更新"
-          >
-            <RefreshCw className={cn('h-5 w-5', loading && 'animate-spin')} />
-          </button>
+          {pathname === '/' && (
+            <button
+              onClick={() => {
+                haptic(8)
+                refresh()
+              }}
+              className="ml-auto rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
+              aria-label="更新"
+            >
+              <RefreshCw className={cn('h-5 w-5', loading && 'animate-spin')} />
+            </button>
+          )}
         </div>
       </header>
 
