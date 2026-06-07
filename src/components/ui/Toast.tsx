@@ -44,6 +44,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           <RT.Root
             key={it.id}
             duration={4200}
+            // Errors interrupt (assertive); success/info wait their turn (polite).
+            type={it.variant === 'error' ? 'foreground' : 'background'}
             onOpenChange={(open) => {
               if (!open) remove(it.id)
             }}

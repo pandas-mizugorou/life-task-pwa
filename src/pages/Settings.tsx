@@ -147,21 +147,33 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
  *  hardcoded ids (so a future status change can't silently land in the wrong column). */
 function DriftWarning() {
   const [drift, setDrift] = useState<string[]>([])
+  const [checkFailed, setCheckFailed] = useState(false)
   useEffect(() => {
     let alive = true
     api
       .getMeta()
       .then((m) => {
-        if (alive) setDrift(m.drift ?? [])
+        if (alive) {
+          setDrift(m.drift ?? [])
+          setCheckFailed(false)
+        }
       })
       .catch(() => {
-        /* transient — the board screen surfaces connection errors */
+        // Don't swallow silently: a failed check means the drift safety net didn't run.
+        if (alive) setCheckFailed(true)
       })
     return () => {
       alive = false
     }
   }, [])
-  if (drift.length === 0) return null
+  if (drift.length === 0) {
+    if (!checkFailed) return null
+    return (
+      <p className="px-1 text-center text-xs text-sub">
+        ボード設定の整合性を確認できませんでした（通信状況をご確認ください）。
+      </p>
+    )
+  }
   return (
     <Card className="border-warn/50 bg-warn/5">
       <CardTitle>

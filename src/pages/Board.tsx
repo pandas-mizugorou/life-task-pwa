@@ -237,6 +237,9 @@ export function Board() {
       <DndContext
         sensors={sensors}
         collisionDetection={collisionDetectionStrategy}
+        // Trigger edge auto-scroll sooner: columns are 72vw (only ~1.4 visible), so a
+        // cross-column drag needs the board to scroll horizontally before the pickup lapses.
+        autoScroll={{ threshold: { x: 0.2, y: 0.25 }, acceleration: 12 }}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
