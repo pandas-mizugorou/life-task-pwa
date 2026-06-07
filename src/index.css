@@ -30,7 +30,9 @@
   --panel2: #21262d;
   --line: #30363d;
   --ink: #e6edf3;
-  --sub: #8b949e;
+  /* Slightly lighter than GitHub's #8b949e so secondary text clears WCAG AA (~4.5:1)
+     on the panel2 surface, where #8b949e fell just short (~4.1:1). */
+  --sub: #9da7b3;
   --accent: #adbac7;
   --accent2: #cdd5de;
   --warn: #d29922;

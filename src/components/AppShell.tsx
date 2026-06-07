@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ListChecks, RefreshCw, Settings as SettingsIcon } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
@@ -28,6 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { refresh, loading } = useBoard()
   const { unverified } = useAuth()
   const { pathname } = useLocation()
+  const reduce = useReducedMotion()
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
   useEffect(() => {
     const goOnline = () => setOnline(true)
@@ -107,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <motion.span
                       layoutId="nav-pill"
                       className="absolute inset-x-10 inset-y-1 rounded-2xl bg-accent2/12"
-                      transition={{ type: 'spring', stiffness: 480, damping: 38 }}
+                      transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 480, damping: 38 }}
                       aria-hidden
                     />
                   )}

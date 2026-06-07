@@ -1,11 +1,12 @@
 import { useEffect, useRef } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { hasUnsaved } from '../lib/unsavedGuard'
 
 /** Bottom prompt shown when a new app version is available. Tap to update. */
 export function PwaUpdatePrompt() {
+  const reduce = useReducedMotion()
   const swRef = useRef<ServiceWorkerRegistration | undefined>(undefined)
   const {
     needRefresh: [needRefresh, setNeedRefresh],
@@ -54,7 +55,7 @@ export function PwaUpdatePrompt() {
           initial={{ y: 90, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 90, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 30 }}
+          transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 320, damping: 30 }}
           className="fixed inset-x-0 bottom-0 z-[110] mx-auto flex w-[min(92vw,420px)] items-center gap-3 rounded-2xl border border-line bg-panel px-4 py-3 shadow-2xl"
           style={{ marginBottom: 'calc(env(safe-area-inset-bottom) + var(--nav-h) + 12px)' }}
         >
