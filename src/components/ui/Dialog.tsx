@@ -34,7 +34,7 @@ export function DialogContent({
             )}
           </div>
           <RD.Close
-            className="rounded-lg p-1 text-sub transition hover:bg-panel2 hover:text-ink"
+            className="relative rounded-lg p-1 text-sub transition before:absolute before:-inset-2 before:content-[''] hover:bg-panel2 hover:text-ink"
             aria-label="閉じる"
           >
             <X className="h-5 w-5" />

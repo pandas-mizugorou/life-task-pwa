@@ -13,7 +13,7 @@ import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input, Label, Textarea } from '../components/ui/Input'
 import { FullSpinner, Spinner } from '../components/ui/Spinner'
-import { ErrorState } from '../components/ui/States'
+import { EmptyState, ErrorState } from '../components/ui/States'
 import { LabelToggleChips } from '../components/LabelToggleChips'
 import { CommentList } from '../components/CommentList'
 import { Markdown } from '../components/Markdown'
@@ -43,6 +43,7 @@ export function TaskDetail() {
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [notFound, setNotFound] = useState(false)
   const [picker, setPicker] = useState(false)
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
@@ -55,12 +56,13 @@ export function TaskDetail() {
 
   const load = useCallback(() => {
     if (!validNumber) {
-      setError('タスクが見つかりません')
+      setNotFound(true)
       setLoading(false)
       return Promise.resolve()
     }
     setLoading(true)
     setError(null)
+    setNotFound(false)
     return api
       .getTask(number)
       .then(({ task, comments }) => {
@@ -69,7 +71,11 @@ export function TaskDetail() {
         setTitle(task.title)
         setBody(task.body)
       })
-      .catch((e) => setError(errMsg(e)))
+      .catch((e) => {
+        // 404 = deleted / off the board → a dead end, not something to retry.
+        if (e instanceof api.ApiError && e.status === 404) setNotFound(true)
+        else setError(errMsg(e))
+      })
       .finally(() => setLoading(false))
   }, [number, validNumber])
 
@@ -97,7 +103,34 @@ export function TaskDetail() {
   }, [editing, title, body, task])
 
   if (loading) return <FullSpinner label="読み込み中…" />
-  if (error || !task) return <ErrorState message={error ?? 'タスクが見つかりません'} onRetry={load} />
+  if (notFound)
+    return (
+      <div className="grid h-full place-items-center px-4">
+        <EmptyState
+          icon="🔍"
+          title="タスクが見つかりません"
+          description="ボードから外れたか、削除された可能性があります。"
+          action={
+            <Button variant="secondary" onClick={() => navigate('/')}>
+              ボードへ戻る
+            </Button>
+          }
+        />
+      </div>
+    )
+  if (error || !task)
+    return (
+      <div className="grid h-full place-items-center px-4">
+        <div>
+          <ErrorState message={error ?? '読み込みに失敗しました'} onRetry={load} />
+          <div className="mt-2 flex justify-center">
+            <Button variant="ghost" onClick={() => navigate('/')}>
+              ボードへ戻る
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
 
   const meta = STATUS_META[task.status]
 
@@ -244,7 +277,7 @@ export function TaskDetail() {
           href={task.url}
           target="_blank"
           rel="noreferrer"
-          className="ml-auto rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
+          className="relative ml-auto rounded-lg p-3 text-sub transition before:absolute before:-inset-1 before:content-[''] hover:bg-panel2 hover:text-ink"
           aria-label="GitHub で開く"
         >
           <ExternalLink className="h-4 w-4" />
@@ -303,7 +336,7 @@ export function TaskDetail() {
               <h1 className="min-w-0 flex-1 text-lg font-bold leading-snug text-ink">{task.title}</h1>
               <button
                 onClick={() => setEditing(true)}
-                className="shrink-0 rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
+                className="relative shrink-0 rounded-lg p-3 text-sub transition before:absolute before:-inset-1 before:content-[''] hover:bg-panel2 hover:text-ink"
                 aria-label="編集"
               >
                 <Pencil className="h-4 w-4" />

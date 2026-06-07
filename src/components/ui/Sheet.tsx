@@ -51,7 +51,7 @@ export function SheetContent({
           </div>
           <RD.Close
             aria-label="閉じる"
-            className="-mr-1 shrink-0 rounded-lg p-1.5 text-sub transition hover:bg-panel2 hover:text-ink"
+            className="relative -mr-1 shrink-0 rounded-lg p-1.5 text-sub transition before:absolute before:-inset-2 before:content-[''] hover:bg-panel2 hover:text-ink"
           >
             <X className="h-5 w-5" />
           </RD.Close>

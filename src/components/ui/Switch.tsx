@@ -18,7 +18,8 @@ export function Switch({
       onCheckedChange={onCheckedChange}
       aria-label={ariaLabel}
       className={cn(
-        'relative h-6 w-11 shrink-0 rounded-full border border-line bg-panel2 transition-colors data-[state=checked]:border-accent2 data-[state=checked]:bg-accent2',
+        // h-6 visual; before:-inset-2.5 expands the tap target to ~44px tall (WCAG 2.5.5).
+        'relative h-6 w-11 shrink-0 rounded-full border border-line bg-panel2 transition-colors before:absolute before:-inset-2.5 before:content-[""] data-[state=checked]:border-accent2 data-[state=checked]:bg-accent2',
         className,
       )}
     >
