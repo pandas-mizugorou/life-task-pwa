@@ -66,7 +66,7 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
 
   return (
     <div className="mx-auto h-full max-w-2xl space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-28 pt-4">
-      <h1 className="text-lg font-black text-ink">設定</h1>
+      <h1 className="h-page">設定</h1>
 
       <DriftWarning />
       <ShowClosedToggle />

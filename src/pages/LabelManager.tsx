@@ -114,7 +114,7 @@ export function LabelManager() {
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-lg font-black text-ink">ラベルの編集</h1>
+        <h1 className="h-page">ラベルの編集</h1>
         <Button size="sm" className="ml-auto" onClick={openCreate}>
           <Plus className="h-4 w-4" />
           追加
