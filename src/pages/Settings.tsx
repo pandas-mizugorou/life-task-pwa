@@ -48,6 +48,10 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://life-task-api.xxx.workers.dev"
             />
+            <p className="mt-2 text-xs leading-relaxed text-sub">
+              デプロイした Cloudflare Worker の URL です（Cloudflare ダッシュボード →
+              Workers で確認できます）。
+            </p>
             <Button className="mt-4 w-full" onClick={save} disabled={!url.trim()}>
               保存して続ける
             </Button>

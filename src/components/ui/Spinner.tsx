@@ -13,7 +13,7 @@ export function FullSpinner({ label }: { label?: string }) {
       aria-live="polite"
     >
       <Spinner className="h-7 w-7 text-accent" />
-      <p className={label ? 'text-sm' : 'sr-only'}>{label ?? '読み込み中'}</p>
+      <p className={label ? 'text-sm' : 'sr-only'}>{label ?? '読み込み中…'}</p>
     </div>
   )
 }

@@ -150,9 +150,16 @@ export function LabelManager() {
         </Reorder.Group>
       )}
 
-      <p className="px-1 text-xs leading-relaxed text-sub">
-        ＝ をつまんでドラッグすると、他の行がよけてその場で並び替わります。順番はこの端末に保存され、ボードのフィルタやラベル付けにも反映されます。名称・色の変更や削除は GitHub の life リポジトリに即反映され、そのラベルが付いた全 Issue に及びます。
-      </p>
+      <div className="space-y-1.5 px-1 text-xs leading-relaxed text-sub">
+        <p>
+          ＝ をドラッグで並び替え。順番は<span className="font-semibold text-ink/80">この端末のみ</span>
+          に保存され、ボードのフィルタやラベル付けの表示順に反映されます。
+        </p>
+        <p>
+          名称・色の変更と削除は<span className="font-semibold text-ink/80">GitHub に即反映</span>
+          され、そのラベルが付いた全 Issue に及びます。
+        </p>
+      </div>
 
       <Sheet
         open={editor !== null}
