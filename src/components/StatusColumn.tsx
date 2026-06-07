@@ -53,16 +53,21 @@ export function StatusColumn({
     listRef.current = el
   }
   const highlight = isOver || isTarget
+  const headingId = `col-${status.replace(/\s+/g, '-')}`
 
   return (
-    <section className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col">
+    <section
+      aria-labelledby={headingId}
+      className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col"
+    >
       <div className="mb-2 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.dot }} aria-hidden />
-        <span
+        <h2
+          id={headingId}
           className={cn('text-sm font-bold transition-colors', highlight ? 'text-accent2' : 'text-ink')}
         >
           {meta.label}
-        </span>
+        </h2>
         <span className="rounded-full bg-panel2 px-1.5 py-0.5 text-[11px] font-semibold text-sub">
           {tasks.length}
         </span>

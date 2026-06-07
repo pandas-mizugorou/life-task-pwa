@@ -24,6 +24,7 @@ export function LabelToggleChips({
           <button
             key={l.name}
             onClick={() => onToggle(l.name)}
+            aria-pressed={on}
             className={cn(
               'flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-semibold transition active:scale-[0.97]',
               on ? 'text-ink' : 'border-line text-sub',
@@ -32,7 +33,7 @@ export function LabelToggleChips({
           >
             <span className="h-2.5 w-2.5 rounded-full" style={{ background: c }} aria-hidden />
             {l.name}
-            {on && <Check className="h-3.5 w-3.5" style={{ color: c }} />}
+            {on && <Check className="h-3.5 w-3.5" style={{ color: c }} aria-hidden />}
           </button>
         )
       })}

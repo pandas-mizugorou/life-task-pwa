@@ -28,10 +28,15 @@ export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: b
     didRestore.current = true
   }, [tasks])
   return (
-    <section className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col">
+    <section
+      aria-labelledby="col-completed"
+      className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col"
+    >
       <div className="mb-2 flex items-center gap-2 px-1">
-        <CheckCircle2 className="h-3.5 w-3.5 text-accent2" />
-        <span className="text-sm font-bold text-ink">完了済み</span>
+        <CheckCircle2 className="h-3.5 w-3.5 text-accent2" aria-hidden />
+        <h2 id="col-completed" className="text-sm font-bold text-ink">
+          完了済み
+        </h2>
         <span className="rounded-full bg-panel2 px-1.5 py-0.5 text-[11px] font-semibold text-sub">
           {tasks.length}
         </span>

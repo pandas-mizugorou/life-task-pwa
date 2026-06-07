@@ -44,6 +44,7 @@ function Chip({
   return (
     <button
       onClick={onClick}
+      aria-pressed={active}
       className={cn(
         'shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-semibold transition',
         active ? 'text-ink' : 'border-line text-sub',

@@ -30,9 +30,12 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
       ref={ref}
       role="button"
       tabIndex={0}
+      aria-label={task.title}
       onClick={onOpen}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') {
+        // Activate on Enter or Space (native button behaviour) — only when the card
+        // itself is focused, so typing in a nested control isn't hijacked.
+        if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) {
           e.preventDefault()
           onOpen?.()
         }
@@ -79,8 +82,11 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
             </span>
           )}
           {task.commentCount > 0 && (
-            <span className="inline-flex items-center gap-0.5 text-[11px] text-sub">
-              <MessageSquare className="h-3 w-3" /> {task.commentCount}
+            <span
+              className="inline-flex items-center gap-0.5 text-[11px] text-sub"
+              aria-label={`コメント ${task.commentCount} 件`}
+            >
+              <MessageSquare className="h-3 w-3" aria-hidden /> {task.commentCount}
             </span>
           )}
           <span className="text-[11px] text-sub">#{task.number}</span>

@@ -32,6 +32,7 @@ export function StatusPickerSheet({
                 <button
                   key={s}
                   onClick={() => onPick(s)}
+                  aria-pressed={active}
                   className="flex h-12 w-full items-center gap-3 rounded-xl border px-4 text-left transition active:scale-[0.99]"
                   style={{
                     borderColor: active ? meta.dot : 'var(--line)',
@@ -40,7 +41,7 @@ export function StatusPickerSheet({
                 >
                   <span className="h-3 w-3 rounded-full" style={{ background: meta.dot }} aria-hidden />
                   <span className="font-semibold text-ink">{meta.label}</span>
-                  {active && <Check className="ml-auto h-5 w-5" style={{ color: meta.dot }} />}
+                  {active && <Check className="ml-auto h-5 w-5" style={{ color: meta.dot }} aria-hidden />}
                 </button>
               )
             })}

@@ -202,6 +202,7 @@ export function Board() {
 
   return (
     <div ref={boardRef} className="relative flex h-full flex-col overflow-hidden">
+      <h1 className="sr-only">タスクボード</h1>
       {(pull > 0 || refreshing) && (
         <div
           className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center"
