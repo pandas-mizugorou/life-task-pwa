@@ -40,6 +40,13 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
   return pointer.length > 0 ? pointer : closestCorners(args)
 }
 
+// The column a task is *displayed* in. byStatus renders open tasks with a
+// non-active status (legacy open+Done) in the Todo column, so all drag math must
+// use the same mapping — raw `t.status` would point at the empty 'Done' bucket
+// and a drop onto such a card would silently write status "Done" to the moved card.
+const displayCol = (t: Task): Status =>
+  ACTIVE_STATUSES.includes(t.status) ? t.status : 'Todo'
+
 export function Board() {
   const board = useBoard()
   const toast = useToast()
@@ -126,7 +133,7 @@ export function Board() {
       const overNum = Number(overId.slice(5))
       const overTask = board.tasks.find((t) => t.number === overNum)
       if (overTask) {
-        col = overTask.status
+        col = displayCol(overTask)
         const colTasks = board.byStatus[col]
         const overIdx = colTasks.findIndex((t) => t.number === overNum)
         const overRect = e.over?.rect
@@ -177,7 +184,7 @@ export function Board() {
       if (insertAt < 0) insertAt = flat.length
     } else {
       let last = -1
-      for (let i = 0; i < flat.length; i++) if (flat[i].status === targetCol) last = i
+      for (let i = 0; i < flat.length; i++) if (displayCol(flat[i]) === targetCol) last = i
       insertAt = last >= 0 ? last + 1 : flat.length
     }
     flat.splice(insertAt, 0, movedNew)

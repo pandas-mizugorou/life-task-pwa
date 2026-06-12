@@ -23,8 +23,10 @@ export function Switch({
         className,
       )}
     >
-      {/* bg-ink (off-white token), not pure white — keeps the thumb on the theme palette */}
-      <RS.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-ink shadow transition-transform data-[state=checked]:translate-x-[22px]" />
+      {/* Thumb colour flips with the track so it stays visible in both states:
+          light (ink) on the dark unchecked track, dark (panel) on the light
+          checked track — a single colour can't contrast with both (~1.25:1). */}
+      <RS.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-ink shadow transition-transform data-[state=checked]:translate-x-[22px] data-[state=checked]:bg-panel" />
     </RS.Root>
   )
 }

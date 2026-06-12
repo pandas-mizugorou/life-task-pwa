@@ -55,6 +55,13 @@ export function TaskDetail() {
   const scrollRef = useRef<HTMLDivElement>(null)
   useScrollTop(scrollRef, number) // reset to top when switching to another task
 
+  // Live task snapshot for async rollbacks: a failed op must revert from the
+  // *current* state, not the stale closure captured when the op started.
+  const taskRef = useRef<Task | null>(null)
+  useEffect(() => {
+    taskRef.current = task
+  }, [task])
+
   const load = useCallback(() => {
     if (!validNumber) {
       setNotFound(true)
@@ -151,7 +158,8 @@ export function TaskDetail() {
       setTask(updated)
       board.updateTaskLocal(updated)
     } catch (e) {
-      setTask(prev)
+      // surgical: revert only the status, keeping concurrent edits (labels/comments) intact
+      setTask((t) => (t ? { ...t, status: prev.status } : t))
       toast({ variant: 'error', title: 'ステータス変更に失敗しました', description: errMsg(e) })
     }
   }
@@ -167,7 +175,8 @@ export function TaskDetail() {
       const updated = await board.setTaskLabels(task.number, next)
       setTask(updated)
     } catch {
-      setTask(prev) // board.setTaskLabels already showed a toast
+      // surgical revert (labels only); board.setTaskLabels already showed a toast
+      setTask((t) => (t ? { ...t, labels: prev.labels } : t))
     }
   }
 
@@ -243,7 +252,6 @@ export function TaskDetail() {
       body: text,
       createdAt: new Date().toISOString(),
     }
-    const prevTask = task
     setComments((cs) => [...cs, optimistic])
     const bumped = { ...task, commentCount: task.commentCount + 1 }
     setTask(bumped)
@@ -253,8 +261,14 @@ export function TaskDetail() {
       setComments((cs) => cs.map((c) => (c.id === tmpId ? comment : c)))
     } catch (e) {
       setComments((cs) => cs.filter((c) => c.id !== tmpId))
-      setTask(prevTask)
-      board.updateTaskLocal(prevTask)
+      // surgical: undo only the count bump from the *current* state — restoring the
+      // whole pre-op snapshot would clobber edits that landed while the send was in flight
+      const cur = taskRef.current
+      if (cur) {
+        const reverted = { ...cur, commentCount: Math.max(0, cur.commentCount - 1) }
+        setTask(reverted)
+        board.updateTaskLocal(reverted)
+      }
       toast({ variant: 'error', title: 'コメントに失敗しました', description: errMsg(e) })
       throw e
     }
