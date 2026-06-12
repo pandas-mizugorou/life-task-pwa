@@ -265,7 +265,7 @@ function LabelRow({
     >
       <button
         onPointerDown={(e) => controls.start(e)}
-        className="-ml-1 cursor-grab touch-none rounded-lg p-2 text-sub transition hover:bg-panel2 hover:text-ink active:cursor-grabbing"
+        className="relative -ml-1 cursor-grab touch-none rounded-lg p-2 text-sub transition before:absolute before:-inset-1 before:content-[''] hover:bg-panel2 hover:text-ink active:cursor-grabbing"
         aria-label={`${label.name} を並べ替え`}
       >
         <GripVertical className="h-5 w-5" />
@@ -274,7 +274,7 @@ function LabelRow({
       <span className="min-w-0 flex-1 truncate text-sm text-sub">{label.name}</span>
       <button
         onClick={onEdit}
-        className="rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
+        className="relative rounded-lg p-3 text-sub transition before:absolute before:-inset-1 before:content-[''] hover:bg-panel2 hover:text-ink"
         aria-label={`${label.name} を編集`}
       >
         <Pencil className="h-4 w-4" />

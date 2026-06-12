@@ -14,6 +14,10 @@ export const ACTIVE_STATUSES: Status[] = ['Backlog', 'Todo', 'In Progress', 'Pen
  * Visual treatment per status (dot color + soft tint for active pills).
  * Colours come from CSS variables defined in index.css (single source of truth),
  * so the board stays in sync with the theme. Tints are derived via color-mix.
+ *
+ * `label` is intentionally English: it mirrors the Status option names on the
+ * GitHub Projects board verbatim, so the PWA and github.com always read the same.
+ * Translating here would desync the two views (UX-P2-27, accepted).
  */
 export const STATUS_META: Record<Status, { label: string; dot: string; tint: string }> = {
   Backlog: {

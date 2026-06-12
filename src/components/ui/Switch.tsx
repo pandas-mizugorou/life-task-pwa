@@ -23,7 +23,8 @@ export function Switch({
         className,
       )}
     >
-      <RS.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[state=checked]:translate-x-[22px]" />
+      {/* bg-ink (off-white token), not pure white — keeps the thumb on the theme palette */}
+      <RS.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-ink shadow transition-transform data-[state=checked]:translate-x-[22px]" />
     </RS.Root>
   )
 }

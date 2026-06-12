@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { FullSpinner } from './components/ui/Spinner'
@@ -60,12 +60,16 @@ export default function App() {
   if (!unlocked) return <Gate />
 
   return (
-    <BoardProvider>
-      <BrowserRouter>
-        <AppShell>
-          <AnimatedRoutes />
-        </AppShell>
-      </BrowserRouter>
-    </BoardProvider>
+    // reducedMotion="user": framer-driven animations (incl. the label Reorder list,
+    // which has no per-component reduce check) follow the OS reduce-motion setting.
+    <MotionConfig reducedMotion="user">
+      <BoardProvider>
+        <BrowserRouter>
+          <AppShell>
+            <AnimatedRoutes />
+          </AppShell>
+        </BrowserRouter>
+      </BoardProvider>
+    </MotionConfig>
   )
 }

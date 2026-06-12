@@ -41,7 +41,8 @@ export function StatusPickerSheet({
                 >
                   <span className="h-3 w-3 rounded-full" style={{ background: meta.dot }} aria-hidden />
                   <span className="font-semibold text-ink">{meta.label}</span>
-                  {active && <Check className="ml-auto h-5 w-5" style={{ color: meta.dot }} aria-hidden />}
+                  {/* ink, not the status colour: a gray-status check on its gray tint is invisible */}
+                  {active && <Check className="ml-auto h-5 w-5 text-ink" aria-hidden />}
                 </button>
               )
             })}

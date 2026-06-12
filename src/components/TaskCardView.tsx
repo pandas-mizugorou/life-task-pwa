@@ -43,7 +43,9 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
       className={cn(
         // select-none + no iOS touch-callout: stops the long-press from triggering text
         // selection / the callout magnifier, which otherwise steals the drag pickup.
-        'fa-card flex select-none items-start gap-2 rounded-2xl border border-line bg-panel p-3 transition [-webkit-touch-callout:none] hover:border-accent/40 active:scale-[0.99]',
+        // touch-action:manipulation keeps scroll/pan working (unlike `none`) while
+        // disabling the double-tap-zoom heuristic that can swallow the 200ms long-press.
+        'fa-card flex select-none items-start gap-2 rounded-2xl border border-line bg-panel p-3 transition [-webkit-touch-callout:none] [touch-action:manipulation] hover:border-accent/40 active:scale-[0.99]',
         dragging ? 'opacity-40' : 'cursor-pointer',
         className,
       )}
