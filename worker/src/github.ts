@@ -79,22 +79,25 @@ function backoffMs(attempt: number): number {
   return 200 + attempt * 300 + Math.floor(Math.random() * 200)
 }
 
-/** fetch with a 10s timeout + one retry on network error / transient 5xx. */
-async function ghFetch(url: string, init: RequestInit): Promise<Response> {
+/** fetch with a 10s timeout + one retry on network error / transient 5xx.
+ *  Pass `retry: false` for non-idempotent calls (REST POST creates an issue or a
+ *  comment): a 5xx/timeout can arrive *after* GitHub applied the write, and a
+ *  blind replay would create a duplicate. */
+async function ghFetch(url: string, init: RequestInit, retry = true): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
     const ctrl = new AbortController()
     const timer = setTimeout(() => ctrl.abort(), GH_TIMEOUT_MS)
     try {
       const res = await fetch(url, { ...init, signal: ctrl.signal })
       clearTimeout(timer)
-      if (res.status >= 500 && res.status <= 599 && attempt < GH_MAX_RETRIES) {
+      if (res.status >= 500 && res.status <= 599 && retry && attempt < GH_MAX_RETRIES) {
         await sleep(backoffMs(attempt))
         continue
       }
       return res
     } catch (e) {
       clearTimeout(timer)
-      if (attempt < GH_MAX_RETRIES) {
+      if (retry && attempt < GH_MAX_RETRIES) {
         await sleep(backoffMs(attempt))
         continue
       }
@@ -110,8 +113,10 @@ async function ghFetch(url: string, init: RequestInit): Promise<Response> {
 /** Throw a clear 429 if the response indicates GitHub primary/secondary rate limiting. */
 function throwIfRateLimited(res: Response): void {
   const remaining = res.headers.get('x-ratelimit-remaining')
-  if (res.status === 429 || (res.status === 403 && remaining === '0')) {
-    const retryAfter = res.headers.get('retry-after')
+  const retryAfter = res.headers.get('retry-after')
+  // Secondary (abuse) limits answer 403 + Retry-After, often WITHOUT zeroing
+  // x-ratelimit-remaining — match on either signal so they don't surface as a generic 403.
+  if (res.status === 429 || (res.status === 403 && (remaining === '0' || retryAfter !== null))) {
     throw new ApiError(
       `GitHub のレート制限に達しました。${retryAfter ? `約${retryAfter}秒` : 'しばらく'}おいて再度お試しください。`,
       429,
@@ -125,6 +130,8 @@ async function ghGraphQL<T = unknown>(
   query: string,
   variables: Record<string, unknown>,
 ): Promise<T> {
+  // GraphQL stays retryable even though it's HTTP POST: every mutation used here
+  // sets absolute values or adds/moves by id, so an accidental replay is harmless.
   const res = await ghFetch('https://api.github.com/graphql', {
     method: 'POST',
     headers: ghHeaders(env),
@@ -148,11 +155,16 @@ async function ghRest(
   path: string,
   body?: unknown,
 ): Promise<any> {
-  const res = await ghFetch(`https://api.github.com${path}`, {
-    method,
-    headers: ghHeaders(env, true),
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  // REST POST creates things (issue / comment) — never auto-retry those (duplicates).
+  const res = await ghFetch(
+    `https://api.github.com${path}`,
+    {
+      method,
+      headers: ghHeaders(env, true),
+      body: body ? JSON.stringify(body) : undefined,
+    },
+    method !== 'POST',
+  )
   throwIfRateLimited(res)
   if (!res.ok) {
     const txt = await res.text().catch(() => '')
