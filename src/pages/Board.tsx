@@ -30,6 +30,7 @@ import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
 import { boardScroll } from '../lib/boardScroll'
 import { usePullToRefresh } from '../lib/usePullToRefresh'
+import { useIsDesktop } from '../lib/useMediaQuery'
 import { ACTIVE_STATUSES } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 
@@ -50,6 +51,7 @@ const displayCol = (t: Task): Status =>
 export function Board() {
   const board = useBoard()
   const toast = useToast()
+  const isDesktop = useIsDesktop()
   const [picker, setPicker] = useState<Task | null>(null)
   const [addStatus, setAddStatus] = useState<Status | null>(null)
   const [labelTarget, setLabelTarget] = useState<Task | null>(null)
@@ -247,7 +249,8 @@ export function Board() {
         collisionDetection={collisionDetectionStrategy}
         // Trigger edge auto-scroll sooner: columns are 72vw (only ~1.4 visible), so a
         // cross-column drag needs the board to scroll horizontally before the pickup lapses.
-        autoScroll={{ threshold: { x: 0.2, y: 0.25 }, acceleration: 12 }}
+        // PC では全列が見えており横スクロールが無いので横方向 auto-scroll は無効化（縦は維持）。
+        autoScroll={{ threshold: { x: isDesktop ? 0 : 0.2, y: 0.25 }, acceleration: 12 }}
         onDragStart={onDragStart}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
@@ -315,8 +318,9 @@ export function Board() {
                 boardScroll.left = e.currentTarget.scrollLeft
               }}
               className={cn(
-                'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3',
-                !activeTask && 'snap-x snap-proximity',
+                // PC（lg 以上）は全列が flex-1 で均等に収まるので横スクロール・スナップを無効化。
+                'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3 lg:overflow-x-hidden lg:px-6',
+                !activeTask && 'snap-x snap-proximity lg:snap-none',
               )}
               // Momentum/inertia scrolling on iOS so a flick glides instead of stopping dead.
               style={{ WebkitOverflowScrolling: 'touch' }}

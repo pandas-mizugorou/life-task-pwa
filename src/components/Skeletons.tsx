@@ -31,7 +31,7 @@ export function BoardSkeleton() {
       </div>
       <div className="flex min-h-0 flex-1 animate-pulse gap-3 overflow-hidden px-4 pt-3">
         {ACTIVE_STATUSES.map((s, ci) => (
-          <section key={s} className="flex h-full w-[72vw] max-w-[16rem] shrink-0 flex-col">
+          <section key={s} className="flex h-full w-[72vw] max-w-[16rem] shrink-0 flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1">
             <div className="mb-2 flex items-center gap-2 px-1">
               <span
                 className="h-2.5 w-2.5 rounded-full"

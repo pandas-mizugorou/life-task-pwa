@@ -1,4 +1,4 @@
-import { Sheet, SheetContent } from './ui/Sheet'
+import { ResponsiveSheet, ResponsiveSheetContent } from './ui/ResponsiveSheet'
 import { LabelToggleChips } from './LabelToggleChips'
 import { useBoard } from '../context/BoardContext'
 import { haptic } from '../lib/haptics'
@@ -22,18 +22,18 @@ export function LabelQuickSheet({ task, onClose }: { task: Task | null; onClose:
   }
 
   return (
-    <Sheet
+    <ResponsiveSheet
       open={!!task}
       onOpenChange={(o) => {
         if (!o) onClose()
       }}
     >
       {task && (
-        <SheetContent title="ラベルを付ける" description={`#${task.number} ${task.title}`}>
+        <ResponsiveSheetContent title="ラベルを付ける" description={`#${task.number} ${task.title}`}>
           <LabelToggleChips selected={selected} onToggle={toggle} labels={board.labels} />
           <p className="mt-3 text-xs leading-relaxed text-sub">タップで付け外し（即時反映）。</p>
-        </SheetContent>
+        </ResponsiveSheetContent>
       )}
-    </Sheet>
+    </ResponsiveSheet>
   )
 }

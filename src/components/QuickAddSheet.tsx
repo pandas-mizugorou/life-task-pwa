@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { Sheet, SheetContent } from './ui/Sheet'
+import { ResponsiveSheet, ResponsiveSheetContent } from './ui/ResponsiveSheet'
 import { Input, Label } from './ui/Input'
 import { Select } from './ui/Select'
 import { Button } from './ui/Button'
@@ -57,13 +57,13 @@ export function QuickAddSheet({
   }
 
   return (
-    <Sheet
+    <ResponsiveSheet
       open={open}
       onOpenChange={(o) => {
         if (!o) onClose()
       }}
     >
-      <SheetContent title="タスクを追加">
+      <ResponsiveSheetContent title="タスクを追加">
         <form onSubmit={submit} className="space-y-4">
           <div>
             <Label htmlFor="qa-title">タイトル</Label>
@@ -104,7 +104,7 @@ export function QuickAddSheet({
             )}
           </Button>
         </form>
-      </SheetContent>
-    </Sheet>
+      </ResponsiveSheetContent>
+    </ResponsiveSheet>
   )
 }

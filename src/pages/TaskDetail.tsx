@@ -25,6 +25,7 @@ import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { useToast } from '../components/ui/Toast'
 import { useBoard } from '../context/BoardContext'
 import * as api from '../lib/api'
+import { cn } from '../lib/cn'
 import { STATUS_META } from '../lib/status'
 import { errMsg, haptic } from '../lib/haptics'
 import { useAutoGrow } from '../lib/useAutoGrow'
@@ -33,7 +34,10 @@ import { useScrollTop } from '../lib/useScrollTop'
 import { setUnsaved } from '../lib/unsavedGuard'
 import type { Comment, Status, Task } from '../lib/types'
 
-export function TaskDetail() {
+export function TaskDetail({
+  panel = false,
+  onClose,
+}: { panel?: boolean; onClose?: () => void } = {}) {
   const { number: numStr } = useParams()
   // Guard malformed deep links (e.g. /task/abc, /task/12.5): only positive integer
   // ids are valid issue numbers. Invalid ids short-circuit to not-found below
@@ -58,6 +62,8 @@ export function TaskDetail() {
   // Tapped image shown full-screen (from body or a comment). One state for both.
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const openImage = (src: string, alt: string) => setLightbox({ src, alt })
+  // 詳細を閉じる: パネル（PC）は onClose でパネルだけ閉じ、全画面（モバイル）はボードへ。
+  const close = () => (panel ? onClose?.() : navigate('/'))
   // Comment id awaiting delete confirmation (null = dialog closed).
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const bodyRef = useAutoGrow(body) // grow the body editor to fit its content
@@ -141,7 +147,7 @@ export function TaskDetail() {
           title="タスクが見つかりません"
           description="ボードから外れたか、削除された可能性があります。"
           action={
-            <Button variant="secondary" onClick={() => navigate('/')}>
+            <Button variant="secondary" onClick={close}>
               ボードへ戻る
             </Button>
           }
@@ -154,7 +160,7 @@ export function TaskDetail() {
         <div>
           <ErrorState message={error ?? '読み込みに失敗しました'} onRetry={load} />
           <div className="mt-2 flex justify-center">
-            <Button variant="ghost" onClick={() => navigate('/')}>
+            <Button variant="ghost" onClick={close}>
               ボードへ戻る
             </Button>
           </div>
@@ -167,7 +173,10 @@ export function TaskDetail() {
   const dirty = editing && (title !== task.title || body !== task.body)
   const goBack = () => {
     if (dirty && !window.confirm('編集中の内容は保存されていません。破棄して戻りますか？')) return
-    navigate(-1)
+    // パネル（PC）は詳細だけ閉じてボードを残す。全画面（モバイル）は履歴を1つ戻る
+    // （ボード以外から深いリンクで来た場合の自然な戻り先を保つため navigate(-1)）。
+    if (panel) onClose?.()
+    else navigate(-1)
   }
 
   const pickStatus = async (s: Status) => {
@@ -243,7 +252,7 @@ export function TaskDetail() {
     try {
       await api.removeFromBoard(number)
       board.removeTaskLocal(number)
-      navigate('/')
+      close() // パネルは閉じ、全画面はボードへ
       toast({
         variant: 'success',
         title: 'ボードから外しました',
@@ -347,15 +356,19 @@ export function TaskDetail() {
   return (
     <div
       ref={scrollRef}
-      className="mx-auto h-full max-w-2xl space-y-4 overflow-y-auto overscroll-y-contain px-4 pb-28 pt-4"
+      className={cn(
+        'h-full space-y-4 overflow-y-auto overscroll-y-contain px-4 pt-4',
+        // パネル時は中央寄せ・下部ナビ用余白が不要。全画面時は現状維持。
+        panel ? 'max-w-none pb-6' : 'mx-auto max-w-2xl pb-28',
+      )}
     >
       <div className="flex items-center gap-2">
         <button
           onClick={goBack}
           className="rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
-          aria-label="戻る"
+          aria-label={panel ? '閉じる' : '戻る'}
         >
-          <ArrowLeft className="h-5 w-5" />
+          {panel ? <X className="h-5 w-5" /> : <ArrowLeft className="h-5 w-5" />}
         </button>
         <span className="text-sm text-sub">#{task.number}</span>
         <a

@@ -30,7 +30,7 @@ export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: b
   return (
     <section
       aria-labelledby="col-completed"
-      className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col"
+      className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1"
     >
       <div className="mb-2 flex items-center gap-2 px-1">
         <CheckCircle2 className="h-3.5 w-3.5 text-accent2" aria-hidden />

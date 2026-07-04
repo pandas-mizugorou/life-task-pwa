@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '../lib/cn'
 import { haptic } from '../lib/haptics'
+import { useIsDesktop } from '../lib/useMediaQuery'
 import { useAuth } from '../context/AuthContext'
 import { useBoard } from '../context/BoardContext'
 
@@ -29,6 +30,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { unverified } = useAuth()
   const { pathname } = useLocation()
   const reduce = useReducedMotion()
+  const isDesktop = useIsDesktop()
+  // PC ではボードが常時見えている（`/` も `/t/N` も）ので、パネル表示中も更新できるように。
+  const showRefresh = pathname === '/' || (isDesktop && pathname.startsWith('/t/'))
   const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine)
   useEffect(() => {
     const goOnline = () => setOnline(true)
@@ -46,14 +50,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="z-40 border-b border-line/70 bg-bg/80 backdrop-blur-md"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4">
+        <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4 lg:max-w-none lg:px-6">
           <div className="flex items-center gap-2 font-bold">
             <span className="grid h-7 w-7 place-items-center rounded-lg bg-grad text-heroink">
               <ListChecks className="h-4 w-4" />
             </span>
             <span className="text-ink">Lifeタスク</span>
           </div>
-          {pathname === '/' && (
+
+          {/* PC 専用のヘッダーナビ。下部ナビと同じ NAV を再利用。layoutId は付けない
+              （下部ナビの pill とブレークポイント跨ぎで競合するのを避けるため、素の active スタイル）。 */}
+          <nav className="ml-6 hidden items-center gap-1 lg:flex">
+            {NAV.map((n) => {
+              const Icon = n.icon
+              const active = n.match(pathname)
+              return (
+                <Link
+                  key={n.to}
+                  to={n.to}
+                  onClick={() => haptic(8)}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition',
+                    active ? 'bg-accent2/12 text-accent2' : 'text-sub hover:bg-panel2 hover:text-ink',
+                  )}
+                >
+                  <Icon className="h-[18px] w-[18px]" />
+                  {n.label}
+                </Link>
+              )
+            })}
+          </nav>
+
+          {showRefresh && (
             <button
               onClick={() => {
                 haptic(8)
@@ -90,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <main className="min-h-0 flex-1 overflow-hidden">{children}</main>
 
       <nav
-        className="z-40 border-t border-line bg-panel/90 backdrop-blur-xl"
+        className="z-40 border-t border-line bg-panel/90 backdrop-blur-xl lg:hidden"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="mx-auto grid max-w-2xl grid-cols-2">

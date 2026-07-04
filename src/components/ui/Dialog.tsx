@@ -29,8 +29,12 @@ export function DialogContent({
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <RD.Title className="text-lg font-bold text-ink">{title}</RD.Title>
-            {description && (
+            {/* description 未指定でも sr-only の Description を出す（Radix の
+                aria-describedby 警告回避。Sheet と同じ扱い）。 */}
+            {description ? (
               <RD.Description className="mt-1 text-sm text-sub">{description}</RD.Description>
+            ) : (
+              <RD.Description className="sr-only">{title}</RD.Description>
             )}
           </div>
           <RD.Close

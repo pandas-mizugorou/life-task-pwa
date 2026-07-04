@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react'
-import { Sheet, SheetContent } from './ui/Sheet'
+import { ResponsiveSheet, ResponsiveSheetContent } from './ui/ResponsiveSheet'
 import { ACTIVE_STATUSES, STATUS_META } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 
@@ -16,14 +16,14 @@ export function StatusPickerSheet({
   onComplete?: () => void
 }) {
   return (
-    <Sheet
+    <ResponsiveSheet
       open={!!task}
       onOpenChange={(o) => {
         if (!o) onClose()
       }}
     >
       {task && (
-        <SheetContent title="ステータスを変更" description={`#${task.number} ${task.title}`}>
+        <ResponsiveSheetContent title="ステータスを変更" description={`#${task.number} ${task.title}`}>
           <div className="space-y-2">
             {ACTIVE_STATUSES.map((s) => {
               const meta = STATUS_META[s]
@@ -62,8 +62,8 @@ export function StatusPickerSheet({
               </p>
             </div>
           )}
-        </SheetContent>
+        </ResponsiveSheetContent>
       )}
-    </Sheet>
+    </ResponsiveSheet>
   )
 }
