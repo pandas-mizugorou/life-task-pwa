@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Input, Label, Textarea } from '../components/ui/Input'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState, ErrorState } from '../components/ui/States'
@@ -57,6 +58,8 @@ export function TaskDetail() {
   // Tapped image shown full-screen (from body or a comment). One state for both.
   const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   const openImage = (src: string, alt: string) => setLightbox({ src, alt })
+  // Comment id awaiting delete confirmation (null = dialog closed).
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const bodyRef = useAutoGrow(body) // grow the body editor to fit its content
   const bodyPaste = usePasteImage({
     onChange: setBody,
@@ -293,6 +296,54 @@ export function TaskDetail() {
     }
   }
 
+  const editCmt = async (id: string, body: string) => {
+    // Optimistic: swap the body now, reconcile with the server copy on success,
+    // roll the body back on failure. Throwing keeps CommentList's editor open.
+    const prev = comments.find((c) => c.id === id)?.body
+    setComments((cs) => cs.map((c) => (c.id === id ? { ...c, body } : c)))
+    try {
+      const { comment } = await api.editComment(id, body)
+      setComments((cs) => cs.map((c) => (c.id === id ? comment : c)))
+    } catch (e) {
+      if (prev !== undefined) {
+        setComments((cs) => cs.map((c) => (c.id === id ? { ...c, body: prev } : c)))
+      }
+      toast({ variant: 'error', title: 'コメントの編集に失敗しました', description: errMsg(e) })
+      throw e
+    }
+  }
+
+  const deleteCmt = async (id: string) => {
+    // Optimistic: remove now (delete is irreversible — a confirm dialog gates this),
+    // and restore at the original index on failure.
+    const idx = comments.findIndex((c) => c.id === id)
+    if (idx < 0) return
+    const removed = comments[idx]
+    setComments((cs) => cs.filter((c) => c.id !== id))
+    const cur = taskRef.current
+    if (cur) {
+      const r = { ...cur, commentCount: Math.max(0, cur.commentCount - 1) }
+      setTask(r)
+      board.updateTaskLocal(r)
+    }
+    try {
+      await api.deleteComment(id)
+    } catch (e) {
+      setComments((cs) => {
+        const n = [...cs]
+        n.splice(Math.min(idx, n.length), 0, removed)
+        return n
+      })
+      const cur2 = taskRef.current
+      if (cur2) {
+        const r = { ...cur2, commentCount: cur2.commentCount + 1 }
+        setTask(r)
+        board.updateTaskLocal(r)
+      }
+      toast({ variant: 'error', title: 'コメントの削除に失敗しました', description: errMsg(e) })
+    }
+  }
+
   return (
     <div
       ref={scrollRef}
@@ -447,6 +498,8 @@ export function TaskDetail() {
         <CommentList
           comments={comments}
           onAdd={addCmt}
+          onEdit={editCmt}
+          onDelete={(id) => setConfirmDeleteId(id)}
           onImageClick={openImage}
           onError={(msg) =>
             toast({ variant: 'error', title: '画像のアップロードに失敗しました', description: msg })
@@ -502,6 +555,19 @@ export function TaskDetail() {
       {lightbox && (
         <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
       )}
+
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+        title="コメントを削除しますか？"
+        description="この操作は取り消せません。削除したコメントは元に戻せません。"
+        confirmLabel="削除する"
+        destructive
+        onConfirm={() => {
+          if (confirmDeleteId) void deleteCmt(confirmDeleteId)
+          setConfirmDeleteId(null)
+        }}
+      />
     </div>
   )
 }

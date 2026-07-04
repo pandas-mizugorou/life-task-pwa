@@ -61,7 +61,10 @@ query TaskDetail($owner: String!, $repo: String!, $number: Int!) {
       labels(first: 10) { nodes { name color } }
       comments(first: 100) {
         totalCount
-        nodes { id author { login } body createdAt }
+        # fullDatabaseId = the REST numeric comment id (BigInt). We surface it as the
+        # Comment.id so edit/delete (REST, numeric-id only) work on displayed comments,
+        # matching the id addComment already returns. Must be String()'d (BigInt).
+        nodes { id fullDatabaseId author { login } body createdAt }
       }
       projectItems(first: 20) {
         nodes {

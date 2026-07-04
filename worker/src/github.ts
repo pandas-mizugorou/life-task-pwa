@@ -306,7 +306,9 @@ export async function getTaskDetail(env: Env, number: number): Promise<{ task: T
   const issue = data?.repository?.issue
   if (!issue) throw new ApiError(`Issue #${number} が見つかりません`, 404)
   const comments: Comment[] = (issue.comments?.nodes ?? []).map((n: any) => ({
-    id: n.id,
+    // fullDatabaseId is the REST numeric comment id (BigInt) — String() it so edit/
+    // delete can address this comment, and so it matches addComment's String(c.id).
+    id: String(n.fullDatabaseId),
     author: n.author?.login ?? '(unknown)',
     body: n.body,
     createdAt: n.createdAt,
@@ -432,6 +434,21 @@ export async function addComment(env: Env, number: number, bodyText: unknown): P
   if (!text) throw new ApiError('コメントが空です', 400)
   const c = await ghRest(env, 'POST', `/repos/${OWNER}/${REPO}/issues/${number}/comments`, { body: text })
   return { id: String(c.id), author: c.user?.login ?? '', body: c.body, createdAt: c.created_at }
+}
+
+/** Edit a comment by its numeric REST id (issue-number-independent). PATCH is
+ *  idempotent, so ghRest's default retry is fine. Returns the updated comment. */
+export async function editComment(env: Env, commentId: string, bodyText: unknown): Promise<Comment> {
+  const text = typeof bodyText === 'string' ? bodyText.trim() : ''
+  if (!text) throw new ApiError('コメントが空です', 400)
+  const c = await ghRest(env, 'PATCH', `/repos/${OWNER}/${REPO}/issues/comments/${commentId}`, { body: text })
+  return { id: String(c.id), author: c.user?.login ?? '', body: c.body, createdAt: c.created_at }
+}
+
+/** Delete a comment by its numeric REST id. DELETE→204; a replay just 404s (the row
+ *  is already gone), so ghRest's default retry is harmless. */
+export async function deleteComment(env: Env, commentId: string): Promise<void> {
+  await ghRest(env, 'DELETE', `/repos/${OWNER}/${REPO}/issues/comments/${commentId}`)
 }
 
 // ---- image uploads (committed to the private repo; served via signed proxy) --

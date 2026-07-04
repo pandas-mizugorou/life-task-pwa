@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import worker, { TASK_PATH_RE, timingSafeEqual } from './index'
+import worker, { COMMENT_PATH_RE, TASK_PATH_RE, timingSafeEqual } from './index'
 import type { Env } from './types'
 
 // A no-op ExecutionContext for the fetch handler (only /api/image uses waitUntil).
@@ -34,6 +34,20 @@ describe('TASK_PATH_RE', () => {
     expect('/api/tasks/abc'.match(TASK_PATH_RE)).toBeNull()
     expect('/api/tasks/1/bogus'.match(TASK_PATH_RE)).toBeNull()
     expect('/api/tasks/'.match(TASK_PATH_RE)).toBeNull()
+  })
+})
+
+describe('COMMENT_PATH_RE', () => {
+  it('matches a numeric comment id and captures it', () => {
+    const m = '/api/comments/123456'.match(COMMENT_PATH_RE)
+    expect(m?.[1]).toBe('123456')
+  })
+  it('rejects non-numeric ids and extra segments (no path injection)', () => {
+    expect('/api/comments/abc'.match(COMMENT_PATH_RE)).toBeNull()
+    expect('/api/comments/123/extra'.match(COMMENT_PATH_RE)).toBeNull()
+    expect('/api/comments/'.match(COMMENT_PATH_RE)).toBeNull()
+    expect('/api/comments/12x'.match(COMMENT_PATH_RE)).toBeNull()
+    expect('/api/comments/../secrets'.match(COMMENT_PATH_RE)).toBeNull()
   })
 })
 

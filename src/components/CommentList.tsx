@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ImagePlus, Send } from 'lucide-react'
+import { ImagePlus, Pencil, Send, Trash2 } from 'lucide-react'
 import { Textarea } from './ui/Input'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
@@ -11,11 +11,17 @@ import type { Comment } from '../lib/types'
 export function CommentList({
   comments,
   onAdd,
+  onEdit,
+  onDelete,
   onError,
   onImageClick,
 }: {
   comments: Comment[]
   onAdd: (body: string) => Promise<void>
+  /** Save an edited comment body (parent does the optimistic update + rollback). */
+  onEdit?: (id: string, body: string) => Promise<void>
+  /** Request deletion (parent shows a confirm dialog, then deletes). */
+  onDelete?: (id: string) => void
   /** Surface an image-upload failure (parent shows a toast). */
   onError?: (msg: string) => void
   /** Open a tapped comment image in a lightbox (handled by the parent). */
@@ -25,6 +31,34 @@ export function CommentList({
   const [busy, setBusy] = useState(false)
   const ref = useAutoGrow(text)
   const paste = usePasteImage({ onChange: setText, onError })
+  // Inline edit state: which comment is being edited + its working draft.
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const editRef = useAutoGrow(draft)
+
+  const startEdit = (c: Comment) => {
+    setEditingId(c.id)
+    setDraft(c.body)
+  }
+  const cancelEdit = () => {
+    setEditingId(null)
+    setDraft('')
+  }
+  const saveEdit = async (id: string) => {
+    const body = draft.trim()
+    if (!body || savingEdit) return
+    setSavingEdit(true)
+    try {
+      await onEdit?.(id, body)
+      setEditingId(null)
+      setDraft('')
+    } catch {
+      // onEdit (parent) already surfaced the error toast; keep the editor open.
+    } finally {
+      setSavingEdit(false)
+    }
+  }
   // Hidden file input driven by the "写真を追加" button — the phone-friendly way to
   // attach (opens the photo library / camera sheet) alongside paste & drop.
   const fileRef = useRef<HTMLInputElement>(null)
@@ -58,8 +92,66 @@ export function CommentList({
             <div className="mb-1 flex items-center gap-2 text-xs text-sub">
               <span className="font-semibold text-ink/80">{c.author}</span>
               <span>{fmtDate(c.createdAt)}</span>
+              {/* Edit/delete only for real (server-confirmed) comments. Optimistic
+                  ones use a temp id (tmp-…) and can't be edited until reconciled. */}
+              {editingId !== c.id && !c.id.startsWith('tmp-') && (onEdit || onDelete) && (
+                <span className="ml-auto flex items-center gap-0.5">
+                  {onEdit && (
+                    <button
+                      onClick={() => startEdit(c)}
+                      aria-label="コメントを編集"
+                      className="relative rounded-md p-1.5 text-sub transition before:absolute before:-inset-1 before:content-[''] hover:bg-panel hover:text-ink"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => onDelete(c.id)}
+                      aria-label="コメントを削除"
+                      className="relative rounded-md p-1.5 text-sub transition before:absolute before:-inset-1 before:content-[''] hover:bg-panel hover:text-bad"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </span>
+              )}
             </div>
-            <Markdown onImageClick={onImageClick}>{c.body}</Markdown>
+            {editingId === c.id ? (
+              <div>
+                <Textarea
+                  ref={editRef}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  className="max-h-[40vh] resize-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') cancelEdit()
+                    if (
+                      e.key === 'Enter' &&
+                      (e.metaKey || e.ctrlKey) &&
+                      !e.nativeEvent.isComposing
+                    ) {
+                      e.preventDefault()
+                      void saveEdit(c.id)
+                    }
+                  }}
+                />
+                <div className="mt-2 flex justify-end gap-2">
+                  <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={savingEdit}>
+                    キャンセル
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => saveEdit(c.id)}
+                    disabled={savingEdit || !draft.trim()}
+                  >
+                    {savingEdit ? <Spinner className="h-4 w-4" /> : '保存'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <Markdown onImageClick={onImageClick}>{c.body}</Markdown>
+            )}
           </div>
         ))}
       </div>

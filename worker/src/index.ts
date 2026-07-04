@@ -9,6 +9,10 @@ import { ApiError, STATUS_ORDER } from './github'
 export const TASK_PATH_RE =
   /^\/api\/tasks\/(\d+)(\/status|\/comments|\/item|\/labels|\/position)?$/
 
+/** Comment edit/delete by numeric REST id (exported for tests). The \d+ guard keeps
+ *  arbitrary path segments out of the GitHub URL. */
+export const COMMENT_PATH_RE = /^\/api\/comments\/(\d+)$/
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const cors = corsHeaders(request, env)
@@ -154,6 +158,20 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
   if (p === '/api/tasks' && m === 'POST') {
     const b = (await request.json()) as any
     return { task: await github.createTask(env, b) }
+  }
+
+  // Comment edit/delete by numeric REST id (issue-number-independent, like labels).
+  const cm = p.match(COMMENT_PATH_RE)
+  if (cm) {
+    const commentId = cm[1]
+    if (m === 'PATCH') {
+      const b = (await request.json()) as any
+      return { comment: await github.editComment(env, commentId, b?.body) }
+    }
+    if (m === 'DELETE') {
+      await github.deleteComment(env, commentId)
+      return { ok: true }
+    }
   }
 
   const mm = p.match(TASK_PATH_RE)

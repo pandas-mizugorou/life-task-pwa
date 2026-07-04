@@ -145,6 +145,12 @@ export const patchTask = (n: number, p: TaskPatch) =>
 export const addComment = (n: number, body: string) =>
   call<{ comment: Comment }>(`/api/tasks/${n}/comments`, { method: 'POST', body: JSON.stringify({ body }) })
 
+export const editComment = (id: string, body: string) =>
+  call<{ comment: Comment }>(`/api/comments/${id}`, { method: 'PATCH', body: JSON.stringify({ body }) })
+
+export const deleteComment = (id: string) =>
+  call<{ ok: true }>(`/api/comments/${id}`, { method: 'DELETE' })
+
 export const removeFromBoard = (n: number) =>
   call<{ ok: true }>(`/api/tasks/${n}/item`, { method: 'DELETE' })
 
