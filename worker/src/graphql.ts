@@ -17,6 +17,7 @@ query Board($project: ID!, $cursor: String) {
               state
               url
               updatedAt
+              closedAt
               labels(first: 10) { nodes { name color } }
               comments { totalCount }
             }
@@ -35,7 +36,7 @@ export const ONE_ISSUE_QUERY = /* GraphQL */ `
 query OneIssue($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
     issue(number: $number) {
-      id number title body state url updatedAt
+      id number title body state url updatedAt closedAt
       labels(first: 10) { nodes { name color } }
       comments { totalCount }
       projectItems(first: 20) {
@@ -56,7 +57,7 @@ export const TASK_DETAIL_QUERY = /* GraphQL */ `
 query TaskDetail($owner: String!, $repo: String!, $number: Int!) {
   repository(owner: $owner, name: $repo) {
     issue(number: $number) {
-      id number title body state url updatedAt
+      id number title body state url updatedAt closedAt
       labels(first: 10) { nodes { name color } }
       comments(first: 100) {
         totalCount

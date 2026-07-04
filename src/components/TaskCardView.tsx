@@ -59,6 +59,14 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
               <CheckCircle2 className="h-3 w-3" aria-hidden /> 完了
             </span>
           )}
+          {completed && task.closedAt && (
+            <span
+              className="text-[11px] text-sub"
+              aria-label={`完了日時 ${fmtCloseDate(task.closedAt)}`}
+            >
+              {fmtCloseDate(task.closedAt)}
+            </span>
+          )}
           {onLabelTap && (
             <button
               onClick={(e) => {
@@ -112,3 +120,11 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
     </div>
   )
 })
+
+/** 完了日時を M/D HH:MM でローカル表示（CommentList.fmtDate と同一書式）。 */
+function fmtCloseDate(iso: string): string {
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getMonth() + 1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`
+}

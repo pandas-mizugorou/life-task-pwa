@@ -3,6 +3,7 @@ import { useToast } from '../components/ui/Toast'
 import * as api from '../lib/api'
 import { errMsg, haptic } from '../lib/haptics'
 import { ACTIVE_STATUSES, STATUS_ORDER } from '../lib/status'
+import { sortCompleted } from '../lib/completed'
 import type { Label, NewTask, Status, Task } from '../lib/types'
 
 const LABEL_ORDER_KEY = 'ltp-label-order'
@@ -215,7 +216,15 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
       pendingRef.current++
       setTasks((ts) =>
         ts.map((t) =>
-          t.number === number ? { ...t, state: state === 'closed' ? 'CLOSED' : 'OPEN' } : t,
+          t.number === number
+            ? {
+                ...t,
+                state: state === 'closed' ? 'CLOSED' : 'OPEN',
+                // 完了済み列は closedAt 降順。楽観時に仮の時刻を入れておくと、
+                // サーバ応答を待たずに即座に列の先頭へ入る（応答で正確な値に上書き）。
+                closedAt: state === 'closed' ? new Date().toISOString() : null,
+              }
+            : t,
         ),
       )
       haptic(12)
@@ -379,8 +388,11 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
 
   const completed = useMemo(
     () =>
-      tasks.filter(
-        (t) => t.state === 'CLOSED' && (!labelFilter || t.labels.some((l) => l.name === labelFilter)),
+      sortCompleted(
+        tasks.filter(
+          (t) =>
+            t.state === 'CLOSED' && (!labelFilter || t.labels.some((l) => l.name === labelFilter)),
+        ),
       ),
     [tasks, labelFilter],
   )

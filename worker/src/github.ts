@@ -204,6 +204,7 @@ function issueToTask(issue: any): Task {
     labels: mapLabels(issue.labels),
     url: issue.url,
     updatedAt: issue.updatedAt,
+    closedAt: issue.closedAt ?? null,
     commentCount: issue.comments?.totalCount ?? 0,
   }
 }
@@ -222,6 +223,7 @@ function boardItemToTask(node: any): Task | null {
     labels: mapLabels(issue.labels),
     url: issue.url,
     updatedAt: issue.updatedAt,
+    closedAt: issue.closedAt ?? null,
     commentCount: issue.comments?.totalCount ?? 0,
   }
 }
@@ -358,6 +360,7 @@ export async function createTask(
     labels: (issue.labels ?? []).map((l: any) => ({ name: l.name, color: l.color })),
     url: issue.html_url,
     updatedAt: issue.updated_at,
+    closedAt: null, // 新規作成は必ず OPEN
     commentCount: 0,
   }
 }

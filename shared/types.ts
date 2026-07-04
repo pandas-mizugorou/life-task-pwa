@@ -20,6 +20,8 @@ export interface Task {
   labels: Label[]
   url: string
   updatedAt: string
+  /** ISO 8601 UTC のクローズ時刻。open の間は null。完了済み列のソートに使う。 */
+  closedAt?: string | null
   commentCount: number
 }
 
