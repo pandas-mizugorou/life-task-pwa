@@ -12,11 +12,14 @@ export function CommentList({
   comments,
   onAdd,
   onError,
+  onImageClick,
 }: {
   comments: Comment[]
   onAdd: (body: string) => Promise<void>
   /** Surface an image-upload failure (parent shows a toast). */
   onError?: (msg: string) => void
+  /** Open a tapped comment image in a lightbox (handled by the parent). */
+  onImageClick?: (src: string, alt: string) => void
 }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
@@ -47,7 +50,7 @@ export function CommentList({
               <span className="font-semibold text-ink/80">{c.author}</span>
               <span>{fmtDate(c.createdAt)}</span>
             </div>
-            <Markdown>{c.body}</Markdown>
+            <Markdown onImageClick={onImageClick}>{c.body}</Markdown>
           </div>
         ))}
       </div>

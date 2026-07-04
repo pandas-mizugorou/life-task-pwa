@@ -18,6 +18,7 @@ import { TaskDetailSkeleton } from '../components/Skeletons'
 import { LabelToggleChips } from '../components/LabelToggleChips'
 import { CommentList } from '../components/CommentList'
 import { Markdown } from '../components/Markdown'
+import { ImageLightbox } from '../components/ImageLightbox'
 import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { useToast } from '../components/ui/Toast'
 import { useBoard } from '../context/BoardContext'
@@ -52,6 +53,9 @@ export function TaskDetail() {
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
   const [acting, setActing] = useState(false)
+  // Tapped image shown full-screen (from body or a comment). One state for both.
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
+  const openImage = (src: string, alt: string) => setLightbox({ src, alt })
   const bodyRef = useAutoGrow(body) // grow the body editor to fit its content
   const bodyPaste = usePasteImage({
     onChange: setBody,
@@ -391,7 +395,9 @@ export function TaskDetail() {
               )}
             </div>
             {task.body.trim() ? (
-              <Markdown className="mt-3">{task.body}</Markdown>
+              <Markdown className="mt-3" onImageClick={openImage}>
+                {task.body}
+              </Markdown>
             ) : (
               <p className="mt-3 text-sm text-sub">本文なし</p>
             )}
@@ -412,6 +418,7 @@ export function TaskDetail() {
         <CommentList
           comments={comments}
           onAdd={addCmt}
+          onImageClick={openImage}
           onError={(msg) =>
             toast({ variant: 'error', title: '画像のアップロードに失敗しました', description: msg })
           }
@@ -462,6 +469,10 @@ export function TaskDetail() {
         onClose={() => setPicker(false)}
         onPick={pickStatus}
       />
+
+      {lightbox && (
+        <ImageLightbox src={lightbox.src} alt={lightbox.alt} onClose={() => setLightbox(null)} />
+      )}
     </div>
   )
 }
