@@ -26,7 +26,7 @@ ALLOWED_ORIGIN = "https://life-task-pwa.pages.dev"
 #   4. Copy the shown https://pub-<hash>.r2.dev URL here.
 # Until it's set to a real URL, /api/upload returns 501; the rest of the API is
 # unaffected. (A custom domain also works — just paste it here instead.)
-IMAGES_BASE_URL = "https://REPLACE-WITH-YOUR-R2-PUBLIC-URL"
+IMAGES_BASE_URL = "https://pub-1a99915ebc27449c86a1613b72e299a3.r2.dev"
 
 # R2 bucket that stores pasted images. Create it once (after enabling R2):
 #   wrangler r2 bucket create life-task-images --config worker/wrangler.toml
