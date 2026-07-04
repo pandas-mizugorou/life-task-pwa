@@ -88,6 +88,42 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+/**
+ * Upload one image to the Worker (R2-backed) and get its public URL back.
+ * Sends the raw bytes (NOT JSON) — the browser sets Content-Type from the Blob,
+ * which the Worker reads to validate the format. Callers embed the URL as Markdown.
+ */
+export async function uploadImage(file: Blob): Promise<string> {
+  const base = getWorkerUrl()
+  if (!base) throw new ApiError('Worker URL が未設定です（設定画面で入力してください）', 0)
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    throw new ApiError('オフラインです。電波の良い場所で、もう一度お試しください。', 0)
+  }
+  let res: Response
+  try {
+    res = await fetch(base + '/api/upload', {
+      method: 'POST',
+      // Content-Type comes from the Blob (e.g. image/png); do NOT set application/json here.
+      headers: { 'Content-Type': file.type || 'application/octet-stream', 'X-App-Key': getKey() },
+      body: file,
+    })
+  } catch {
+    throw new ApiError('接続できませんでした。電波状況を確認して、もう一度お試しください。', 0)
+  }
+  if (!res.ok) {
+    let msg = `アップロードに失敗しました (HTTP ${res.status})`
+    try {
+      const b = (await res.json()) as { error?: string }
+      if (b?.error) msg = b.error
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new ApiError(msg, res.status)
+  }
+  const { url } = (await res.json()) as { url: string }
+  return url
+}
+
 export const getMeta = () => call<Meta>('/api/meta')
 
 export const getBoard = (includeClosed = false) =>

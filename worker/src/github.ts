@@ -430,6 +430,46 @@ export async function addComment(env: Env, number: number, bodyText: unknown): P
   return { id: String(c.id), author: c.user?.login ?? '', body: c.body, createdAt: c.created_at }
 }
 
+// ---- image uploads (R2; embedded into comments/bodies as Markdown) ----------
+/** Content-Type -> file extension for the image formats we accept. Anything not
+ *  in this allowlist is rejected — the object is served publicly, so we never
+ *  store SVG (script-carrying) or arbitrary types. */
+const IMAGE_EXT: Record<string, string> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+}
+
+/** 8 MiB cap for a single image — generous for screenshots/photos, small enough
+ *  to keep a paste from stalling the Worker or filling R2. */
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024
+
+/**
+ * Store one image in R2 and return its public URL. The key is time+random so
+ * two pastes never collide; the extension comes from the (validated) MIME type.
+ * Callers embed the returned URL as `![](url)` Markdown.
+ */
+export async function uploadImage(env: Env, bytes: ArrayBuffer, contentType: string): Promise<string> {
+  if (!env.IMAGES || !env.IMAGES_BASE_URL) {
+    throw new ApiError('画像アップロードは未設定です（R2 バケットが未接続）', 501)
+  }
+  const ext = IMAGE_EXT[contentType]
+  if (!ext) throw new ApiError('対応していない画像形式です（png / jpeg / gif / webp のみ）', 415)
+  if (bytes.byteLength === 0) throw new ApiError('画像が空です', 400)
+  if (bytes.byteLength > MAX_IMAGE_BYTES) throw new ApiError('画像が大きすぎます（上限 8MB）', 413)
+
+  // key: YYYY/MM/<epoch>-<rand>.<ext> — date prefix keeps the bucket browsable.
+  const now = new Date()
+  const yyyy = now.getUTCFullYear()
+  const mm = String(now.getUTCMonth() + 1).padStart(2, '0')
+  const rand = Math.random().toString(36).slice(2, 10)
+  const key = `${yyyy}/${mm}/${Date.now()}-${rand}.${ext}`
+
+  await env.IMAGES.put(key, bytes, { httpMetadata: { contentType } })
+  return `${env.IMAGES_BASE_URL.replace(/\/+$/, '')}/${key}`
+}
+
 /** Replace the full set of labels on an issue (the board mirrors issue labels). */
 export async function setTaskLabels(env: Env, number: number, labels: unknown): Promise<Task> {
   if (!Array.isArray(labels) || labels.some((l) => typeof l !== 'string')) {

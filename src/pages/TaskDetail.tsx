@@ -25,6 +25,7 @@ import * as api from '../lib/api'
 import { STATUS_META } from '../lib/status'
 import { errMsg, haptic } from '../lib/haptics'
 import { useAutoGrow } from '../lib/useAutoGrow'
+import { usePasteImage } from '../lib/usePasteImage'
 import { useScrollTop } from '../lib/useScrollTop'
 import { setUnsaved } from '../lib/unsavedGuard'
 import type { Comment, Status, Task } from '../lib/types'
@@ -52,6 +53,11 @@ export function TaskDetail() {
   const [saving, setSaving] = useState(false)
   const [acting, setActing] = useState(false)
   const bodyRef = useAutoGrow(body) // grow the body editor to fit its content
+  const bodyPaste = usePasteImage({
+    onChange: setBody,
+    onError: (msg) =>
+      toast({ variant: 'error', title: '画像のアップロードに失敗しました', description: msg }),
+  })
   const scrollRef = useRef<HTMLDivElement>(null)
   useScrollTop(scrollRef, number) // reset to top when switching to another task
 
@@ -325,11 +331,22 @@ export function TaskDetail() {
                 id="ed-body"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
+                onPaste={bodyPaste.onPaste}
+                onDrop={bodyPaste.onDrop}
+                onDragOver={bodyPaste.onDragOver}
                 className="min-h-[140px] max-h-[50vh] resize-none"
               />
+              <p className="mt-1 text-[11px] text-sub">
+                {bodyPaste.uploading > 0
+                  ? '画像をアップロード中…'
+                  : '画像は貼り付け／ドロップで添付できます'}
+              </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={saveEdit} disabled={saving || !title.trim() || !dirty}>
+              <Button
+                onClick={saveEdit}
+                disabled={saving || !title.trim() || !dirty || bodyPaste.uploading > 0}
+              >
                 {saving ? <Spinner className="h-5 w-5" /> : '保存'}
               </Button>
               <Button
@@ -392,7 +409,13 @@ export function TaskDetail() {
 
       <Card>
         <h2 className="mb-3 text-[15px] font-bold text-ink/90">コメント</h2>
-        <CommentList comments={comments} onAdd={addCmt} />
+        <CommentList
+          comments={comments}
+          onAdd={addCmt}
+          onError={(msg) =>
+            toast({ variant: 'error', title: '画像のアップロードに失敗しました', description: msg })
+          }
+        />
       </Card>
 
       {task.state === 'OPEN' ? (

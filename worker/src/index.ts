@@ -42,6 +42,27 @@ export default {
       return json({ error: '認証に失敗しました' }, 401, cors)
     }
 
+    // Image upload is binary and larger than the JSON limit below — handle it here,
+    // AFTER auth but BEFORE the 64KB JSON guard. github.uploadImage enforces its own
+    // (image-appropriate) size + MIME limits.
+    if (url.pathname === '/api/upload' && request.method === 'POST') {
+      try {
+        const contentType = (request.headers.get('Content-Type') ?? '').split(';')[0].trim()
+        const bytes = await request.arrayBuffer()
+        const imageUrl = await github.uploadImage(env, bytes, contentType)
+        return json({ url: imageUrl }, 200, cors)
+      } catch (e) {
+        const isApi = e instanceof ApiError
+        const status = isApi ? e.status : 500
+        const message = isApi ? e.message : 'サーバーエラーが発生しました'
+        if (status >= 500) {
+          const detail = isApi ? e.detail : e instanceof Error ? `${e.message}\n${e.stack ?? ''}` : String(e)
+          console.error(`[life-task-api] POST /api/upload -> ${status}: ${message}` + (detail ? ` :: ${detail}` : ''))
+        }
+        return json({ error: message }, status, cors)
+      }
+    }
+
     // Reject oversized bodies (defense-in-depth; titles/comments/labels are all small).
     const contentLength = Number(request.headers.get('Content-Length') ?? '0')
     if (contentLength > 64 * 1024) return json({ error: 'リクエストが大きすぎます' }, 413, cors)

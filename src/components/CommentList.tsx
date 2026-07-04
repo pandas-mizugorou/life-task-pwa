@@ -1,25 +1,30 @@
 import { useState } from 'react'
-import { Send } from 'lucide-react'
+import { ImagePlus, Send } from 'lucide-react'
 import { Textarea } from './ui/Input'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
 import { Markdown } from './Markdown'
 import { useAutoGrow } from '../lib/useAutoGrow'
+import { usePasteImage } from '../lib/usePasteImage'
 import type { Comment } from '../lib/types'
 
 export function CommentList({
   comments,
   onAdd,
+  onError,
 }: {
   comments: Comment[]
   onAdd: (body: string) => Promise<void>
+  /** Surface an image-upload failure (parent shows a toast). */
+  onError?: (msg: string) => void
 }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const ref = useAutoGrow(text)
+  const paste = usePasteImage({ onChange: setText, onError })
 
   const submit = async () => {
-    if (!text.trim() || busy) return
+    if (!text.trim() || busy || paste.uploading > 0) return // wait for uploads to resolve
     const body = text.trim()
     setText('') // optimistic: clear instantly; restore if the send fails
     setBusy(true)
@@ -51,6 +56,9 @@ export function CommentList({
           ref={ref}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={paste.onPaste}
+          onDrop={paste.onDrop}
+          onDragOver={paste.onDragOver}
           className="max-h-[40vh] resize-none"
           onKeyDown={(e) => {
             // Plain Enter = newline (multi-line comments); ⌘/Ctrl+Enter sends.
@@ -60,10 +68,21 @@ export function CommentList({
               void submit()
             }
           }}
-          placeholder="コメントを書く…（⌘/Ctrl+Enter で送信）"
+          placeholder="コメントを書く…（画像は貼り付け／ドロップで添付・⌘/Ctrl+Enter で送信）"
         />
-        <div className="mt-2 flex justify-end">
-          <Button onClick={submit} disabled={busy || !text.trim()} size="sm">
+        <div className="mt-2 flex items-center justify-between">
+          <span className="inline-flex items-center gap-1 text-[11px] text-sub">
+            {paste.uploading > 0 ? (
+              <>
+                <Spinner className="h-3 w-3" /> 画像をアップロード中…
+              </>
+            ) : (
+              <>
+                <ImagePlus className="h-3.5 w-3.5" /> 画像を貼り付け／ドロップ
+              </>
+            )}
+          </span>
+          <Button onClick={submit} disabled={busy || !text.trim() || paste.uploading > 0} size="sm">
             {busy ? (
               <Spinner className="h-4 w-4" />
             ) : (

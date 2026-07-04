@@ -16,6 +16,24 @@ compatibility_date = "2024-11-01"
 # the sole gate for non-browser callers).
 ALLOWED_ORIGIN = "https://life-task-pwa.pages.dev"
 
+# Public URL base for images uploaded to the R2 bucket below (NO trailing slash).
+# The stored object key is appended to this to form the URL embedded in Markdown.
+#
+# Set this to the bucket's r2.dev Public Development URL. To get it:
+#   1. Enable R2 once in the Cloudflare dashboard (requires a card; free tier covers
+#      personal use). 2. Create the bucket (see below). 3. In the dashboard open
+#      R2 > life-task-images > Settings > "Public Development URL" and Allow Access.
+#   4. Copy the shown https://pub-<hash>.r2.dev URL here.
+# Until it's set to a real URL, /api/upload returns 501; the rest of the API is
+# unaffected. (A custom domain also works — just paste it here instead.)
+IMAGES_BASE_URL = "https://REPLACE-WITH-YOUR-R2-PUBLIC-URL"
+
+# R2 bucket that stores pasted images. Create it once (after enabling R2):
+#   wrangler r2 bucket create life-task-images --config worker/wrangler.toml
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "life-task-images"
+
 # Per-IP brute-force throttle for FAILED passphrase attempts. Uses the Cloudflare
 # Rate Limiting binding (no external resource to create). 20 failures / 60s / IP
 # -> HTTP 429. The code is a no-op if this binding is absent, so existing deploys
