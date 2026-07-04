@@ -154,8 +154,12 @@ async function ghRest(
   method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body?: unknown,
+  // Override retryability. Default: retry everything except POST (which creates
+  // issues/comments — a replay would duplicate). A non-idempotent PUT (creating a
+  // file with no `sha`) must pass false too: a 5xx that lands *after* GitHub wrote
+  // the file would 422 on replay yet the file exists — reported as failure but done.
+  retry: boolean = method !== 'POST',
 ): Promise<any> {
-  // REST POST creates things (issue / comment) — never auto-retry those (duplicates).
   const res = await ghFetch(
     `https://api.github.com${path}`,
     {
@@ -163,7 +167,7 @@ async function ghRest(
       headers: ghHeaders(env, true),
       body: body ? JSON.stringify(body) : undefined,
     },
-    method !== 'POST',
+    retry,
   )
   throwIfRateLimited(res)
   if (!res.ok) {
@@ -430,44 +434,173 @@ export async function addComment(env: Env, number: number, bodyText: unknown): P
   return { id: String(c.id), author: c.user?.login ?? '', body: c.body, createdAt: c.created_at }
 }
 
-// ---- image uploads (R2; embedded into comments/bodies as Markdown) ----------
-/** Content-Type -> file extension for the image formats we accept. Anything not
- *  in this allowlist is rejected — the object is served publicly, so we never
- *  store SVG (script-carrying) or arbitrary types. */
+// ---- image uploads (committed to the private repo; served via signed proxy) --
+// Images live in the repo under assets/, so there is NO storage bill (GitHub does
+// not charge for normal Git blobs — only Git LFS is metered). Because the repo is
+// private, an <img> can't read them directly (no auth header from a browser), so
+// the Worker exposes /api/image/<path>?sig=<hmac> as an authenticated proxy: the
+// signature (keyed by APP_PASSPHRASE) proves the path came from us, and only then
+// does the Worker fetch the bytes from GitHub with the PAT and return them.
+
+/** Content-Type -> file extension for the image formats we accept. SVG stays out
+ *  (script-carrying) even though we now serve via a proxy — defense in depth. */
 const IMAGE_EXT: Record<string, string> = {
   'image/png': 'png',
   'image/jpeg': 'jpg',
   'image/gif': 'gif',
   'image/webp': 'webp',
 }
+/** ext -> Content-Type, for the proxy to label bytes it reads back from GitHub. */
+const EXT_MIME: Record<string, string> = {
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  gif: 'image/gif',
+  webp: 'image/webp',
+}
 
-/** 8 MiB cap for a single image — generous for screenshots/photos, small enough
- *  to keep a paste from stalling the Worker or filling R2. */
+/** 8 MiB cap for a single image. base64 inflates by ~33%, so the committed
+ *  content stays well under GitHub's 100MB file ceiling. */
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024
 
+/** Directory in the repo where images are committed. */
+const IMAGE_DIR = 'assets'
+
+/** True only for a path the proxy may fetch: inside assets/, no traversal, and a
+ *  known image extension. Pure + exported so the traversal guard is unit-tested.
+ *  Returns the resolved MIME so callers don't re-derive it. */
+export function safeImagePath(path: string): { ok: boolean; mime?: string } {
+  const ext = path.split('.').pop()?.toLowerCase() ?? ''
+  const mime = EXT_MIME[ext]
+  const ok =
+    path.startsWith(`${IMAGE_DIR}/`) && !path.includes('..') && !path.startsWith('/') && !!mime
+  return ok ? { ok, mime } : { ok: false }
+}
+
+/** Encode raw bytes as base64 (GitHub Contents API wants base64 `content`).
+ *  Chunked to avoid blowing the call-stack on String.fromCharCode(...big array). */
+function toBase64(bytes: ArrayBuffer): string {
+  const u8 = new Uint8Array(bytes)
+  let bin = ''
+  const CHUNK = 0x8000
+  for (let i = 0; i < u8.length; i += CHUNK) {
+    bin += String.fromCharCode(...u8.subarray(i, i + CHUNK))
+  }
+  return btoa(bin)
+}
+
+/** HMAC-SHA256(path) in hex, keyed by APP_PASSPHRASE. Proves a /api/image path
+ *  was minted by us so the proxy won't fetch arbitrary repo paths on demand. */
+export async function signPath(secret: string, path: string): Promise<string> {
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(path))
+  return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+/** Constant-time compare of two hex signatures (avoids timing leaks). */
+function safeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
+/** Verify a signature for `path`. Returns true only for a path we signed. */
+export async function verifyPath(secret: string, path: string, sig: string): Promise<boolean> {
+  if (!sig) return false
+  const expected = await signPath(secret, path)
+  return safeEqualHex(expected, sig)
+}
+
 /**
- * Store one image in R2 and return its public URL. The key is time+random so
- * two pastes never collide; the extension comes from the (validated) MIME type.
- * Callers embed the returned URL as `![](url)` Markdown.
+ * Commit one image into the private repo and return the signed proxy URL to embed
+ * as `![](url)` Markdown. No storage cost (normal Git blob). The path is
+ * time+random so two pastes never collide and no `sha` (update) handling is needed.
  */
 export async function uploadImage(env: Env, bytes: ArrayBuffer, contentType: string): Promise<string> {
-  if (!env.IMAGES || !env.IMAGES_BASE_URL) {
-    throw new ApiError('画像アップロードは未設定です（R2 バケットが未接続）', 501)
+  if (!env.WORKER_PUBLIC_URL) {
+    throw new ApiError('画像アップロードは未設定です（WORKER_PUBLIC_URL 未設定）', 501)
   }
   const ext = IMAGE_EXT[contentType]
   if (!ext) throw new ApiError('対応していない画像形式です（png / jpeg / gif / webp のみ）', 415)
   if (bytes.byteLength === 0) throw new ApiError('画像が空です', 400)
   if (bytes.byteLength > MAX_IMAGE_BYTES) throw new ApiError('画像が大きすぎます（上限 8MB）', 413)
 
-  // key: YYYY/MM/<epoch>-<rand>.<ext> — date prefix keeps the bucket browsable.
+  // path: assets/YYYY/MM/<epoch>-<rand>.<ext> — date prefix keeps it browsable.
   const now = new Date()
   const yyyy = now.getUTCFullYear()
   const mm = String(now.getUTCMonth() + 1).padStart(2, '0')
   const rand = Math.random().toString(36).slice(2, 10)
-  const key = `${yyyy}/${mm}/${Date.now()}-${rand}.${ext}`
+  const path = `${IMAGE_DIR}/${yyyy}/${mm}/${Date.now()}-${rand}.${ext}`
 
-  await env.IMAGES.put(key, bytes, { httpMetadata: { contentType } })
-  return `${env.IMAGES_BASE_URL.replace(/\/+$/, '')}/${key}`
+  // Create the file (new path => no sha required). retry:false — this create is
+  // non-idempotent: if a 5xx arrives after GitHub already wrote the file, a replay
+  // would 422 (path exists, no sha) even though the upload really succeeded.
+  await ghRest(
+    env,
+    'PUT',
+    `/repos/${OWNER}/${REPO}/contents/${path}`,
+    { message: `chore: add image ${path}`, content: toBase64(bytes) },
+    false,
+  )
+
+  const sig = await signPath(env.APP_PASSPHRASE, path)
+  return `${env.WORKER_PUBLIC_URL.replace(/\/+$/, '')}/api/image/${path}?sig=${sig}`
+}
+
+/**
+ * Proxy read: verify the signature, fetch the image bytes from the private repo
+ * with the PAT, and return them as a Response the browser's <img> can render.
+ * Cached at the edge (Cache API) so repeat views don't re-hit GitHub or its rate
+ * limit. `path` is the repo path (e.g. assets/2026/07/....png); `sig` is its HMAC.
+ */
+export async function fetchImage(env: Env, path: string, sig: string): Promise<Response> {
+  if (!(await verifyPath(env.APP_PASSPHRASE, path, sig))) {
+    throw new ApiError('署名が不正です', 403)
+  }
+  // Defense in depth: even if the signing key leaked, never let a crafted path
+  // escape the image dir. uploadImage only ever mints
+  // `assets/YYYY/MM/<epoch>-<rand>.<ext>`, so legitimate paths always pass.
+  const { ok, mime } = safeImagePath(path)
+  if (!ok || !mime) {
+    throw new ApiError('画像パスが不正です', 400)
+  }
+
+  const res = await ghFetch(
+    `https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${env.GITHUB_PAT}`,
+        'User-Agent': 'life-task-api',
+        // raw media type => GitHub returns the file bytes, not a base64 JSON object.
+        Accept: 'application/vnd.github.raw+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    },
+    true, // GET is safe to retry
+  )
+  throwIfRateLimited(res)
+  if (res.status === 404) throw new ApiError('画像が見つかりません', 404)
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '')
+    throw new ApiError('画像の取得に失敗しました', res.status >= 500 ? 502 : res.status, `GET image ${path} -> ${res.status}: ${txt.slice(0, 200)}`)
+  }
+  const body = await res.arrayBuffer()
+  return new Response(body, {
+    status: 200,
+    headers: {
+      'Content-Type': mime,
+      // Immutable: the path is unique per upload, so cache hard once fetched.
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  })
 }
 
 /** Replace the full set of labels on an issue (the board mirrors issue labels). */

@@ -10,7 +10,7 @@ export const TASK_PATH_RE =
   /^\/api\/tasks\/(\d+)(\/status|\/comments|\/item|\/labels|\/position)?$/
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const cors = corsHeaders(request, env)
 
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors })
@@ -21,6 +21,35 @@ export default {
     // Unauthenticated liveness probe — no secrets, no GitHub call. For uptime monitors.
     if (url.pathname === '/api/health' && request.method === 'GET') {
       return json({ ok: true }, 200, cors)
+    }
+
+    // Signed image proxy — served BEFORE the X-App-Key gate because a browser <img>
+    // can't send that header. Access is instead proven by the HMAC `sig` query
+    // param (keyed by APP_PASSPHRASE), which github.fetchImage verifies. Cached at
+    // the edge so repeat views don't re-hit GitHub. Image bytes are non-sensitive
+    // to CORS (an <img> load isn't a CORS-gated fetch), but we still emit `cors`.
+    if (url.pathname.startsWith('/api/image/') && request.method === 'GET') {
+      const cache = caches.default
+      const cached = await cache.match(request)
+      if (cached) return cached
+      try {
+        const path = decodeURIComponent(url.pathname.slice('/api/image/'.length))
+        const sig = url.searchParams.get('sig') ?? ''
+        const res = await github.fetchImage(env, path, sig)
+        // Attach CORS + cache the successful image response for next time.
+        for (const [k, v] of Object.entries(cors)) res.headers.set(k, v)
+        ctx.waitUntil(cache.put(request, res.clone()))
+        return res
+      } catch (e) {
+        const isApi = e instanceof ApiError
+        const status = isApi ? e.status : 500
+        const message = isApi ? e.message : 'サーバーエラーが発生しました'
+        if (status >= 500) {
+          const detail = isApi ? e.detail : e instanceof Error ? `${e.message}\n${e.stack ?? ''}` : String(e)
+          console.error(`[life-task-api] GET ${url.pathname} -> ${status}: ${message}` + (detail ? ` :: ${detail}` : ''))
+        }
+        return json({ error: message }, status, cors)
+      }
     }
 
     // ---- auth: constant-time passphrase check, with per-IP throttling of failures ----

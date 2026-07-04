@@ -2,14 +2,17 @@ import { describe, expect, it } from 'vitest'
 import worker, { TASK_PATH_RE, timingSafeEqual } from './index'
 import type { Env } from './types'
 
+// A no-op ExecutionContext for the fetch handler (only /api/image uses waitUntil).
+const ctx = { waitUntil() {}, passThroughOnException() {} } as unknown as ExecutionContext
+
 describe('GET /api/health', () => {
   it('returns ok without authentication', async () => {
-    const res = await worker.fetch(new Request('https://x/api/health'), {} as Env)
+    const res = await worker.fetch(new Request('https://x/api/health'), {} as Env, ctx)
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true })
   })
   it('does not bypass auth for other routes', async () => {
-    const res = await worker.fetch(new Request('https://x/api/board'), {} as Env)
+    const res = await worker.fetch(new Request('https://x/api/board'), {} as Env, ctx)
     expect(res.status).toBe(401)
   })
 })
