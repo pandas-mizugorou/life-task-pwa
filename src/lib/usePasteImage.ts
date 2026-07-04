@@ -5,8 +5,9 @@ import { errMsg } from './haptics'
 /** Accepted image MIME types — must match the Worker's allowlist (uploadImage). */
 const ACCEPTED = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp'])
 
-/** Pull image files out of a paste/drop payload (ignores non-image items). */
-function imageFiles(items: DataTransferItemList | null, files: FileList | null): File[] {
+/** Pull image files out of a paste/drop/picker payload (ignores non-image items).
+ *  Exported so the "写真を追加" button can reuse the exact same MIME allowlist. */
+export function imageFiles(items: DataTransferItemList | null, files: FileList | null): File[] {
   const out: File[] = []
   // Prefer items (paste gives a synthetic filename); fall back to files (drop).
   if (items) {
@@ -36,7 +37,8 @@ function spliceAt(prev: string, start: number, end: number, text: string): strin
  * on failure). `onChange` MUST accept a functional updater (like a useState setter) so
  * every edit — the initial insert and each async swap — is applied to the freshest
  * value without stale closures or render-time refs. Returns handlers to spread onto
- * the textarea plus `uploading` (uploads in flight — disable submit while > 0).
+ * the textarea, `uploading` (uploads in flight — disable submit while > 0), and
+ * `upload` itself so a "写真を追加" button can feed picked files through the same path.
  */
 export function usePasteImage({
   onChange,
@@ -106,5 +108,5 @@ export function usePasteImage({
     }
   }, [])
 
-  return { onPaste, onDrop, onDragOver, uploading }
+  return { onPaste, onDrop, onDragOver, uploading, upload }
 }

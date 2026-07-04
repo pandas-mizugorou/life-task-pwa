@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   CheckCircle2,
   ExternalLink,
+  ImagePlus,
   Pencil,
   RotateCcw,
   Trash2,
@@ -26,7 +27,7 @@ import * as api from '../lib/api'
 import { STATUS_META } from '../lib/status'
 import { errMsg, haptic } from '../lib/haptics'
 import { useAutoGrow } from '../lib/useAutoGrow'
-import { usePasteImage } from '../lib/usePasteImage'
+import { imageFiles, usePasteImage } from '../lib/usePasteImage'
 import { useScrollTop } from '../lib/useScrollTop'
 import { setUnsaved } from '../lib/unsavedGuard'
 import type { Comment, Status, Task } from '../lib/types'
@@ -62,6 +63,14 @@ export function TaskDetail() {
     onError: (msg) =>
       toast({ variant: 'error', title: '画像のアップロードに失敗しました', description: msg }),
   })
+  // Hidden picker behind the "写真を追加" button (phone-friendly photo attach).
+  const bodyFileRef = useRef<HTMLInputElement>(null)
+  const onPickBodyPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = imageFiles(null, e.target.files)
+    bodyRef.current?.focus() // restore the caret so the image lands where they were typing
+    if (files.length && bodyRef.current) void bodyPaste.upload(bodyRef.current, files)
+    e.target.value = '' // allow re-picking the same photo
+  }
   const scrollRef = useRef<HTMLDivElement>(null)
   useScrollTop(scrollRef, number) // reset to top when switching to another task
 
@@ -340,11 +349,31 @@ export function TaskDetail() {
                 onDragOver={bodyPaste.onDragOver}
                 className="min-h-[140px] max-h-[50vh] resize-none"
               />
-              <p className="mt-1 text-[11px] text-sub">
-                {bodyPaste.uploading > 0
-                  ? '画像をアップロード中…'
-                  : '画像は貼り付け／ドロップで添付できます'}
-              </p>
+              <input
+                ref={bodyFileRef}
+                type="file"
+                accept="image/*"
+                multiple
+                hidden
+                onChange={onPickBodyPhoto}
+              />
+              <button
+                type="button"
+                onClick={() => bodyFileRef.current?.click()}
+                disabled={bodyPaste.uploading > 0}
+                aria-label="写真を追加"
+                className="mt-1 inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-semibold text-sub transition hover:bg-panel2 hover:text-ink disabled:opacity-50"
+              >
+                {bodyPaste.uploading > 0 ? (
+                  <>
+                    <Spinner className="h-3.5 w-3.5" /> 追加中…
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="h-4 w-4" /> 写真を追加
+                  </>
+                )}
+              </button>
             </div>
             <div className="flex gap-2">
               <Button

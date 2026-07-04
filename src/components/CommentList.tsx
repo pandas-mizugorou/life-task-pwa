@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { ImagePlus, Send } from 'lucide-react'
 import { Textarea } from './ui/Input'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
 import { Markdown } from './Markdown'
 import { useAutoGrow } from '../lib/useAutoGrow'
-import { usePasteImage } from '../lib/usePasteImage'
+import { imageFiles, usePasteImage } from '../lib/usePasteImage'
 import type { Comment } from '../lib/types'
 
 export function CommentList({
@@ -25,6 +25,15 @@ export function CommentList({
   const [busy, setBusy] = useState(false)
   const ref = useAutoGrow(text)
   const paste = usePasteImage({ onChange: setText, onError })
+  // Hidden file input driven by the "写真を追加" button — the phone-friendly way to
+  // attach (opens the photo library / camera sheet) alongside paste & drop.
+  const fileRef = useRef<HTMLInputElement>(null)
+  const onPickPhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = imageFiles(null, e.target.files) // re-check MIME (input accept is loose)
+    ref.current?.focus() // restore the caret so the image inserts where they were typing
+    if (files.length && ref.current) void paste.upload(ref.current, files)
+    e.target.value = '' // let the same photo be picked again next time
+  }
 
   const submit = async () => {
     if (!text.trim() || busy || paste.uploading > 0) return // wait for uploads to resolve
@@ -71,20 +80,36 @@ export function CommentList({
               void submit()
             }
           }}
-          placeholder="コメントを書く…（画像は貼り付け／ドロップで添付・⌘/Ctrl+Enter で送信）"
+          placeholder="コメントを書く…（⌘/Ctrl+Enter で送信）"
+        />
+        {/* Hidden picker: the button below drives it. accept=image/* + no capture ⇒
+            iOS shows the photo-library / camera sheet; multiple allows several shots. */}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          onChange={onPickPhoto}
         />
         <div className="mt-2 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1 text-[11px] text-sub">
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={paste.uploading > 0}
+            aria-label="写真を追加"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[12px] font-semibold text-sub transition hover:bg-panel2 hover:text-ink disabled:opacity-50"
+          >
             {paste.uploading > 0 ? (
               <>
-                <Spinner className="h-3 w-3" /> 画像をアップロード中…
+                <Spinner className="h-3.5 w-3.5" /> 追加中…
               </>
             ) : (
               <>
-                <ImagePlus className="h-3.5 w-3.5" /> 画像を貼り付け／ドロップ
+                <ImagePlus className="h-4 w-4" /> 写真を追加
               </>
             )}
-          </span>
+          </button>
           <Button onClick={submit} disabled={busy || !text.trim() || paste.uploading > 0} size="sm">
             {busy ? (
               <Spinner className="h-4 w-4" />
