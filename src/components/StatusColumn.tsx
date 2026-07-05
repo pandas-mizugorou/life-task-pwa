@@ -14,7 +14,6 @@ export function StatusColumn({
   tasks,
   isTarget,
   lineIndex,
-  onStatusTap,
   onLabelTap,
   onAdd,
 }: {
@@ -24,7 +23,6 @@ export function StatusColumn({
   isTarget?: boolean
   /** Show an insertion line before the card at this index (= length means end). */
   lineIndex?: number | null
-  onStatusTap: (t: Task) => void
   onLabelTap: (t: Task) => void
   onAdd: (status: Status) => void
 }) {
@@ -97,7 +95,7 @@ export function StatusColumn({
         {tasks.map((t, i) => (
           <Fragment key={t.number}>
             {lineIndex === i && <DropLine />}
-            <TaskCard task={t} onStatusTap={onStatusTap} onLabelTap={onLabelTap} />
+            <TaskCard task={t} onLabelTap={onLabelTap} />
           </Fragment>
         ))}
         {lineIndex === tasks.length && <DropLine />}

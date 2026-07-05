@@ -1,7 +1,6 @@
 import { forwardRef } from 'react'
 import { CheckCircle2, MessageSquare, Tag } from 'lucide-react'
 import { cn } from '../lib/cn'
-import { STATUS_META } from '../lib/status'
 import type { Task } from '../lib/types'
 import { LabelChip } from './LabelChip'
 
@@ -10,7 +9,6 @@ const MAX_LABELS = 3
 
 interface Props extends React.HTMLAttributes<HTMLDivElement> {
   task: Task
-  onStatusTap?: (t: Task) => void
   onLabelTap?: (t: Task) => void
   onOpen?: () => void
   dragging?: boolean
@@ -18,12 +16,13 @@ interface Props extends React.HTMLAttributes<HTMLDivElement> {
   completed?: boolean
 }
 
-/** Presentational task card. Used directly inside columns and in the DragOverlay. */
+/** Presentational task card. Used directly inside columns and in the DragOverlay.
+ *  ステータスはカードが属するカラムで判別できるため、カード上では表示しない
+ *  （情報の重複を避け、カード本体の情報量を優先）。 */
 export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardView(
-  { task, onStatusTap, onLabelTap, onOpen, dragging, completed, className, ...rest },
+  { task, onLabelTap, onOpen, dragging, completed, className, ...rest },
   ref,
 ) {
-  const meta = STATUS_META[task.status]
   const hiddenLabels = task.labels.length - MAX_LABELS
   return (
     <div
@@ -102,21 +101,6 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
           <span className="text-[11px] text-sub">#{task.number}</span>
         </div>
       </div>
-      {onStatusTap && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onStatusTap(task)
-          }}
-          onPointerDown={(e) => e.stopPropagation()} // let the pill be tapped without starting a drag
-          className="relative inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-bold text-ink before:absolute before:-inset-2 before:content-['']"
-          style={{ background: meta.tint }}
-          aria-label={`ステータス: ${meta.label}（タップで変更）`}
-        >
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: meta.dot }} aria-hidden />
-          {meta.label}
-        </button>
-      )}
     </div>
   )
 })

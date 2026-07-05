@@ -7,11 +7,9 @@ import { TaskCardView } from './TaskCardView'
  *  (an insertion line shows where) to reorder, or onto another column to move. */
 export function TaskCard({
   task,
-  onStatusTap,
   onLabelTap,
 }: {
   task: Task
-  onStatusTap: (t: Task) => void
   onLabelTap: (t: Task) => void
 }) {
   const navigate = useNavigate()
@@ -27,7 +25,6 @@ export function TaskCard({
     <TaskCardView
       ref={setNodeRef}
       task={task}
-      onStatusTap={onStatusTap}
       onLabelTap={onLabelTap}
       onOpen={() => navigate(`/t/${task.number}`)}
       dragging={drag.isDragging}

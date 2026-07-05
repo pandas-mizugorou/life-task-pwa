@@ -17,12 +17,10 @@ import {
 import { useBoard } from '../context/BoardContext'
 import { BoardSkeleton } from '../components/Skeletons'
 import { Button } from '../components/ui/Button'
-import { useToast } from '../components/ui/Toast'
 import { EmptyState, ErrorState } from '../components/ui/States'
 import { LabelFilterChips } from '../components/LabelFilterChips'
 import { StatusColumn } from '../components/StatusColumn'
 import { CompletedColumn } from '../components/CompletedColumn'
-import { StatusPickerSheet } from '../components/StatusPickerSheet'
 import { QuickAddSheet } from '../components/QuickAddSheet'
 import { LabelQuickSheet } from '../components/LabelQuickSheet'
 import { TaskCardView } from '../components/TaskCardView'
@@ -50,9 +48,7 @@ const displayCol = (t: Task): Status =>
 
 export function Board() {
   const board = useBoard()
-  const toast = useToast()
   const isDesktop = useIsDesktop()
-  const [picker, setPicker] = useState<Task | null>(null)
   const [addStatus, setAddStatus] = useState<Status | null>(null)
   const [labelTarget, setLabelTarget] = useState<Task | null>(null)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
@@ -83,29 +79,6 @@ export function Board() {
   if (board.loading && board.tasks.length === 0) return <BoardSkeleton />
   if (board.error && board.tasks.length === 0)
     return <ErrorState message={board.error} onRetry={board.refresh} />
-
-  const pick = async (s: Status) => {
-    if (!picker) return
-    const number = picker.number
-    setPicker(null)
-    await board.setStatus(number, s)
-  }
-
-  const complete = async () => {
-    if (!picker) return
-    const number = picker.number
-    setPicker(null)
-    try {
-      await board.setTaskState(number, 'closed')
-      toast({
-        variant: 'success',
-        title: '完了にしました',
-        action: { label: '元に戻す', onAction: () => void board.setTaskState(number, 'open') },
-      })
-    } catch {
-      /* board.setTaskState already surfaced the error toast */
-    }
-  }
 
   const onDragStart = (e: DragStartEvent) => {
     const t = e.active.data.current?.task as Task | undefined
@@ -332,7 +305,6 @@ export function Board() {
                   tasks={board.byStatus[s]}
                   isTarget={overColumn === s}
                   lineIndex={dropIndicator && dropIndicator.col === s ? dropIndicator.index : null}
-                  onStatusTap={setPicker}
                   onLabelTap={setLabelTarget}
                   onAdd={setAddStatus}
                 />
@@ -351,12 +323,6 @@ export function Board() {
         </DragOverlay>
       </DndContext>
 
-      <StatusPickerSheet
-        task={picker}
-        onClose={() => setPicker(null)}
-        onPick={pick}
-        onComplete={complete}
-      />
       <LabelQuickSheet task={labelTarget} onClose={() => setLabelTarget(null)} />
       <QuickAddSheet
         open={addStatus !== null}
