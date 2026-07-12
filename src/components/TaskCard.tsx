@@ -8,9 +8,12 @@ import { TaskCardView } from './TaskCardView'
 export function TaskCard({
   task,
   onLabelTap,
+  accentColor,
 }: {
   task: Task
   onLabelTap: (t: Task) => void
+  /** ステータス色（列ごとの色分け用・カード左ストライプに使う）。 */
+  accentColor?: string
 }) {
   const navigate = useNavigate()
   const drag = useDraggable({ id: `task-${task.number}`, data: { task } })
@@ -25,6 +28,7 @@ export function TaskCard({
     <TaskCardView
       ref={setNodeRef}
       task={task}
+      accentColor={accentColor}
       onLabelTap={onLabelTap}
       onOpen={() => navigate(`/t/${task.number}`)}
       dragging={drag.isDragging}

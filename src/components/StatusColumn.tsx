@@ -57,6 +57,8 @@ export function StatusColumn({
     <section
       aria-labelledby={headingId}
       className="flex h-full w-[52vw] max-w-[13rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1"
+      // 列（＝ステータス）の色。レーン背景とカード左ストライプが参照する。
+      style={{ '--col-accent': meta.dot } as React.CSSProperties}
     >
       <div className="mb-2 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.dot }} aria-hidden />
@@ -85,8 +87,11 @@ export function StatusColumn({
         className={cn(
           // Highlight via an inset ring (composited) + bg, not a border toggle, so a long
           // column doesn't repaint/relayout every dragOver frame.
-          'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl bg-panel2/30 p-2 pb-4 transition-[background-color,box-shadow]',
-          highlight && 'bg-accent2/15 shadow-[inset_0_0_0_2px_var(--color-accent2)]',
+          'min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl p-2 pb-4 transition-[background-color,box-shadow]',
+          // 通常時はステータス色のレーン、ドラッグ中のハイライト時は accent2 に切替。
+          highlight
+            ? 'bg-accent2/15 shadow-[inset_0_0_0_2px_var(--color-accent2)]'
+            : 'col-lane',
         )}
       >
         {tasks.length === 0 && lineIndex == null && (
@@ -95,7 +100,7 @@ export function StatusColumn({
         {tasks.map((t, i) => (
           <Fragment key={t.number}>
             {lineIndex === i && <DropLine />}
-            <TaskCard task={t} onLabelTap={onLabelTap} />
+            <TaskCard task={t} accentColor={meta.dot} onLabelTap={onLabelTap} />
           </Fragment>
         ))}
         {lineIndex === tasks.length && <DropLine />}

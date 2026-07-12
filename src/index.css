@@ -110,6 +110,11 @@ body {
 .fa-card {
   box-shadow: var(--card-shadow);
 }
+/* ステータス列ごとのレーン背景。列側の style で --col-accent（ステータス色）を渡す。
+   ドラッグ中のハイライト時はこのクラスを外し、bg-accent2/15 に切り替える運用。 */
+.col-lane {
+  background: color-mix(in srgb, var(--col-accent) 10%, var(--panel2));
+}
 
 /* ---- rendered Markdown (issue body / comments) ---- */
 .md > :first-child { margin-top: 0; }

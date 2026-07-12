@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { boardScroll } from '../lib/boardScroll'
+import { STATUS_META } from '../lib/status'
 import type { Task } from '../lib/types'
 import { TaskCardView } from './TaskCardView'
 import { CardSkeleton } from './Skeletons'
@@ -31,6 +32,8 @@ export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: b
     <section
       aria-labelledby="col-completed"
       className="flex h-full w-[52vw] max-w-[13rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1"
+      // 完了済み列は Done（緑）で色分け。
+      style={{ '--col-accent': STATUS_META.Done.dot } as React.CSSProperties}
     >
       <div className="mb-2 flex items-center gap-2 px-1">
         <CheckCircle2 className="h-3.5 w-3.5 text-accent2" aria-hidden />
@@ -46,7 +49,7 @@ export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: b
         onScroll={(e) => {
           boardScroll.tops.set(COMPLETED_KEY, e.currentTarget.scrollTop)
         }}
-        className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl bg-panel2/30 p-2 pb-4"
+        className="col-lane min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-y-contain rounded-2xl p-2 pb-4"
       >
         {loading && tasks.length === 0 ? (
           <div className="animate-pulse space-y-2">
@@ -59,6 +62,7 @@ export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: b
               key={t.number}
               task={t}
               completed
+              accentColor={STATUS_META.Done.dot}
               onOpen={() => navigate(`/t/${t.number}`)}
               className="opacity-75"
             />

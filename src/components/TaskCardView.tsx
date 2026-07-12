@@ -14,13 +14,15 @@ interface Props extends React.HTMLAttributes<HTMLDivElement> {
   dragging?: boolean
   /** Render a "完了" badge (used by the archive column; gives SR/low-vision a text cue). */
   completed?: boolean
+  /** ステータス色。渡すとカード左端に色ストライプ（inset shadow）を出す。列ごとの色分け用。 */
+  accentColor?: string
 }
 
 /** Presentational task card. Used directly inside columns and in the DragOverlay.
  *  ステータスはカードが属するカラムで判別できるため、カード上では表示しない
  *  （情報の重複を避け、カード本体の情報量を優先）。 */
 export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardView(
-  { task, onLabelTap, onOpen, dragging, completed, className, ...rest },
+  { task, onLabelTap, onOpen, dragging, completed, accentColor, className, style, ...rest },
   ref,
 ) {
   const hiddenLabels = task.labels.length - MAX_LABELS
@@ -48,6 +50,12 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
         dragging ? 'opacity-40' : 'cursor-pointer',
         className,
       )}
+      // 左端の色ストライプ＋既存のカード影を両立（inline なので .fa-card を確実に上書き）。
+      style={
+        accentColor
+          ? { ...style, boxShadow: `inset 4px 0 0 ${accentColor}, var(--card-shadow)` }
+          : style
+      }
       {...rest}
     >
       <div className="min-w-0 flex-1">
