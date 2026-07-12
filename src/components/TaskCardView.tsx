@@ -51,7 +51,10 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
       {...rest}
     >
       <div className="min-w-0 flex-1">
-        <div className="line-clamp-2 text-sm font-semibold leading-snug text-ink">{task.title}</div>
+        {/* スマホは 13px（狭い列でも収まりよく）、PC（lg 以上）は従来の 14px を維持。 */}
+        <div className="line-clamp-2 text-[13px] font-semibold leading-snug text-ink lg:text-sm">
+          {task.title}
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {completed && (
             <span className="inline-flex items-center gap-0.5 rounded-full bg-good/15 px-1.5 py-0.5 text-[10px] font-semibold text-good">
