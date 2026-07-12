@@ -54,8 +54,9 @@
   /* Bottom nav content height (excludes the safe-area inset, which the nav adds
      separately). Shared so overlays can clear the nav without double-counting the inset. */
   --nav-h: 62px;
-  /* PC（lg 以上）のタスク詳細・右サイドパネル幅。DesktopBoardLayout が w-[var(--panel-w)] で参照。 */
-  --panel-w: 420px;
+  /* PC（lg 以上）のタスク詳細・右サイドパネル幅。DesktopBoardLayout が w-[var(--panel-w)] で参照。
+     狭幅PC（1024〜1366px）では 420px 固定だとボード側の列が潰れるため clamp で細める。 */
+  --panel-w: clamp(20rem, 33vw, 420px);
   color-scheme: dark;
 }
 

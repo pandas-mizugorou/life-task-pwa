@@ -16,13 +16,15 @@ interface Props extends React.HTMLAttributes<HTMLDivElement> {
   completed?: boolean
   /** ステータス色。渡すとカード左端に色ストライプ（inset shadow）を出す。列ごとの色分け用。 */
   accentColor?: string
+  /** ステータス名。カード上の pill を廃したぶん、SR 用に aria-label へ「（ステータス）」を補う。 */
+  statusLabel?: string
 }
 
 /** Presentational task card. Used directly inside columns and in the DragOverlay.
  *  ステータスはカードが属するカラムで判別できるため、カード上では表示しない
  *  （情報の重複を避け、カード本体の情報量を優先）。 */
 export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardView(
-  { task, onLabelTap, onOpen, dragging, completed, accentColor, className, style, ...rest },
+  { task, onLabelTap, onOpen, dragging, completed, accentColor, statusLabel, className, style, ...rest },
   ref,
 ) {
   const hiddenLabels = task.labels.length - MAX_LABELS
@@ -31,7 +33,10 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
       ref={ref}
       role="button"
       tabIndex={0}
-      aria-label={task.title}
+      // pill を廃したので、SR にはステータスを aria-label で補う（見た目は列＋色で判別）。
+      aria-label={statusLabel ? `${task.title}（${statusLabel}）` : task.title}
+      // 詳細パネルを閉じたときフォーカスを起点カードへ戻すための目印。
+      data-task={task.number}
       onClick={onOpen}
       onKeyDown={(e) => {
         // Activate on Enter or Space (native button behaviour) — only when the card
@@ -59,8 +64,15 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
       {...rest}
     >
       <div className="min-w-0 flex-1">
-        {/* スマホは 13px（狭い列でも収まりよく）、PC（lg 以上）は従来の 14px を維持。 */}
-        <div className="line-clamp-2 text-[13px] font-semibold leading-snug text-ink lg:text-sm">
+        {/* スマホは 13px（狭い列でも収まりよく）、PC（lg 以上）は従来の 14px を維持。
+            完了カードはタイトルを text-sub に落として減light（カード全体の opacity は使わない
+            ＝「完了」バッジや日時のコントラストを保つため）。 */}
+        <div
+          className={cn(
+            'line-clamp-2 text-[13px] font-semibold leading-snug lg:text-sm',
+            completed ? 'text-sub' : 'text-ink',
+          )}
+        >
           {task.title}
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -85,7 +97,8 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
               }}
               onPointerDown={(e) => e.stopPropagation()}
               className="relative inline-flex items-center rounded-full border border-line p-1 text-sub transition before:absolute before:-inset-2 before:content-[''] hover:border-accent/60 hover:text-ink"
-              aria-label="ラベルを付ける"
+              // タスク名を含める（全カードで同名ボタンが並ぶと SR でどれか分からないため）。
+              aria-label={`${task.title} にラベルを付ける`}
             >
               <Tag className="h-3.5 w-3.5" />
             </button>

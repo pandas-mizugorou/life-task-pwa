@@ -31,11 +31,11 @@ export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: b
   return (
     <section
       aria-labelledby="col-completed"
-      className="flex h-full w-[52vw] max-w-[13rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1"
+      className="flex h-full w-[52vw] max-w-[13rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-[11rem] lg:max-w-none lg:flex-1"
       // 完了済み列は Done（緑）で色分け。
       style={{ '--col-accent': STATUS_META.Done.dot } as React.CSSProperties}
     >
-      <div className="mb-2 flex items-center gap-2 px-1">
+      <div className="mb-2 flex min-h-8 items-center gap-2 px-1">
         <CheckCircle2 className="h-3.5 w-3.5 text-accent2" aria-hidden />
         <h2 id="col-completed" className="text-sm font-bold text-ink">
           完了済み
@@ -63,8 +63,8 @@ export function CompletedColumn({ tasks, loading }: { tasks: Task[]; loading?: b
               task={t}
               completed
               accentColor={STATUS_META.Done.dot}
+              statusLabel="完了済み"
               onOpen={() => navigate(`/t/${t.number}`)}
-              className="opacity-75"
             />
           ))
         ) : (

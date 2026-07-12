@@ -82,6 +82,8 @@ export function TaskDetail({
   }
   const scrollRef = useRef<HTMLDivElement>(null)
   useScrollTop(scrollRef, number) // reset to top when switching to another task
+  // パネル（PC）で開いたとき、閉じるボタンへフォーカスを移すための ref。
+  const closeBtnRef = useRef<HTMLButtonElement>(null)
 
   // Live task snapshot for async rollbacks: a failed op must revert from the
   // *current* state, not the stale closure captured when the op started.
@@ -89,6 +91,14 @@ export function TaskDetail({
   useEffect(() => {
     taskRef.current = task
   }, [task])
+
+  // パネルで開いたら閉じるボタンへフォーカス（SR/キーボードにパネルの出現を伝える）。
+  // 閉じたあとは DesktopBoardLayout が起点カードへフォーカスを戻す。全画面（モバイル）は対象外。
+  useEffect(() => {
+    if (panel && task) closeBtnRef.current?.focus()
+    // 別タスクへ切替時（number 変化）にも合わせたいので task 全体ではなく number を依存に。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel, task?.number])
 
   const load = useCallback(() => {
     if (!validNumber) {
@@ -364,6 +374,7 @@ export function TaskDetail({
     >
       <div className="flex items-center gap-2">
         <button
+          ref={closeBtnRef}
           onClick={goBack}
           className="rounded-lg p-3 text-sub transition hover:bg-panel2 hover:text-ink"
           aria-label={panel ? '閉じる' : '戻る'}

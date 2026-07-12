@@ -56,11 +56,11 @@ export function StatusColumn({
   return (
     <section
       aria-labelledby={headingId}
-      className="flex h-full w-[52vw] max-w-[13rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1"
+      className="flex h-full w-[52vw] max-w-[13rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-[11rem] lg:max-w-none lg:flex-1"
       // 列（＝ステータス）の色。レーン背景とカード左ストライプが参照する。
       style={{ '--col-accent': meta.dot } as React.CSSProperties}
     >
-      <div className="mb-2 flex items-center gap-2 px-1">
+      <div className="mb-2 flex min-h-8 items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.dot }} aria-hidden />
         <h2
           id={headingId}
@@ -100,7 +100,7 @@ export function StatusColumn({
         {tasks.map((t, i) => (
           <Fragment key={t.number}>
             {lineIndex === i && <DropLine />}
-            <TaskCard task={t} accentColor={meta.dot} onLabelTap={onLabelTap} />
+            <TaskCard task={t} accentColor={meta.dot} statusLabel={meta.label} onLabelTap={onLabelTap} />
           </Fragment>
         ))}
         {lineIndex === tasks.length && <DropLine />}

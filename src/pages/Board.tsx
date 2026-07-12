@@ -9,10 +9,12 @@ import {
   pointerWithin,
   useSensor,
   useSensors,
+  type Announcements,
   type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
   type DragStartEvent,
+  type ScreenReaderInstructions,
 } from '@dnd-kit/core'
 import { useBoard } from '../context/BoardContext'
 import { BoardSkeleton } from '../components/Skeletons'
@@ -29,7 +31,7 @@ import { haptic } from '../lib/haptics'
 import { boardScroll } from '../lib/boardScroll'
 import { usePullToRefresh } from '../lib/usePullToRefresh'
 import { useIsDesktop } from '../lib/useMediaQuery'
-import { ACTIVE_STATUSES } from '../lib/status'
+import { ACTIVE_STATUSES, STATUS_META } from '../lib/status'
 import type { Status, Task } from '../lib/types'
 
 // Prefer what's directly under the finger (precise); fall back to the nearest
@@ -45,6 +47,22 @@ const collisionDetectionStrategy: CollisionDetection = (args) => {
 // and a drop onto such a card would silently write status "Done" to the moved card.
 const displayCol = (t: Task): Status =>
   ACTIVE_STATUSES.includes(t.status) ? t.status : 'Todo'
+
+// スクリーンリーダー向けの案内・実況。dnd-kit 既定は英語で Space キー操作を案内するが、
+// KeyboardSensor 未登録（キーボードDnDは別課題）で実際には動かないため、日本語かつ実態に
+// 合う文言に差し替える。実況もタスクタイトルで読み上げる（既定は内部 id で分かりにくい）。
+const dragTitle = (data: Record<string, unknown> | undefined): string =>
+  (data?.task as Task | undefined)?.title ?? 'タスク'
+const screenReaderInstructions: ScreenReaderInstructions = {
+  draggable: 'カードは長押し（PC はドラッグ）で他の列へ移動できます。',
+}
+const dndAnnouncements: Announcements = {
+  onDragStart: ({ active }) => `${dragTitle(active.data.current)} を持ち上げました。`,
+  onDragOver: ({ active, over }) =>
+    over ? `${dragTitle(active.data.current)} を移動中です。` : undefined,
+  onDragEnd: ({ active }) => `${dragTitle(active.data.current)} を置きました。`,
+  onDragCancel: ({ active }) => `${dragTitle(active.data.current)} の移動をキャンセルしました。`,
+}
 
 export function Board() {
   const board = useBoard()
@@ -76,7 +94,8 @@ export function Board() {
     didRestore.current = true
   }, [board.tasks.length])
 
-  if (board.loading && board.tasks.length === 0) return <BoardSkeleton />
+  if (board.loading && board.tasks.length === 0)
+    return <BoardSkeleton showClosed={board.showClosed} />
   if (board.error && board.tasks.length === 0)
     return <ErrorState message={board.error} onRetry={board.refresh} />
 
@@ -219,6 +238,7 @@ export function Board() {
           positioning is measured against the viewport, not a transformed ancestor. */}
       <DndContext
         sensors={sensors}
+        accessibility={{ screenReaderInstructions, announcements: dndAnnouncements }}
         collisionDetection={collisionDetectionStrategy}
         // Trigger edge auto-scroll sooner: columns are 72vw (only ~1.4 visible), so a
         // cross-column drag needs the board to scroll horizontally before the pickup lapses.
@@ -228,8 +248,11 @@ export function Board() {
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
         onDragCancel={() => {
+          // onDragEnd と同様に挿入ライン（dropIndicator）も消す。消し忘れると Esc 等で
+          // ドラッグをキャンセルしたとき挿入ラインが画面に残り続ける。
           setActiveTask(null)
           setOverColumn(null)
+          setDropIndicator(null)
         }}
       >
         {/* Content physically follows the finger while pulling, then springs back. */}
@@ -291,8 +314,10 @@ export function Board() {
                 boardScroll.left = e.currentTarget.scrollLeft
               }}
               className={cn(
-                // PC（lg 以上）は全列が flex-1 で均等に収まるので横スクロール・スナップを無効化。
-                'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3 lg:overflow-x-hidden lg:px-6',
+                // PC（lg 以上）は通常 flex-1 で全列が収まり横スクロールは出ない。ただし詳細
+                // パネルを開いてボード幅が狭まると列は lg:min-w-[11rem] で下限に達するので、
+                // その時だけ overflow-x-auto でスクロールできるようにする（潰れ防止）。スナップは無効。
+                'flex min-h-0 flex-1 gap-3 overflow-x-auto overscroll-x-contain px-4 pt-3 lg:px-6',
                 !activeTask && 'snap-x snap-proximity lg:snap-none',
               )}
               // Momentum/inertia scrolling on iOS so a flick glides instead of stopping dead.
@@ -318,7 +343,12 @@ export function Board() {
 
         <DragOverlay dropAnimation={{ duration: 200, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' }}>
           {activeTask ? (
-            <TaskCardView task={activeTask} className="rotate-1 shadow-2xl ring-2 ring-accent2/50" />
+            // 持ち上げたカードも列内と同じ左ストライプ（移動元ステータスの色）を保つ。
+            <TaskCardView
+              task={activeTask}
+              accentColor={STATUS_META[displayCol(activeTask)].dot}
+              className="rotate-1 shadow-2xl ring-2 ring-accent2/50"
+            />
           ) : null}
         </DragOverlay>
       </DndContext>

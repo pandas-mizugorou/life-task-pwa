@@ -9,11 +9,14 @@ export function TaskCard({
   task,
   onLabelTap,
   accentColor,
+  statusLabel,
 }: {
   task: Task
   onLabelTap: (t: Task) => void
   /** ステータス色（列ごとの色分け用・カード左ストライプに使う）。 */
   accentColor?: string
+  /** ステータス名（SR 用に aria-label へ補う）。 */
+  statusLabel?: string
 }) {
   const navigate = useNavigate()
   const drag = useDraggable({ id: `task-${task.number}`, data: { task } })
@@ -29,6 +32,7 @@ export function TaskCard({
       ref={setNodeRef}
       task={task}
       accentColor={accentColor}
+      statusLabel={statusLabel}
       onLabelTap={onLabelTap}
       onOpen={() => navigate(`/t/${task.number}`)}
       dragging={drag.isDragging}

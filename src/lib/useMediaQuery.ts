@@ -18,5 +18,8 @@ export function useMediaQuery(query: string): boolean {
   )
 }
 
-/** Tailwind の `lg`（1024px）以上か。ブレークポイント定数を1箇所に集約する。 */
-export const useIsDesktop = () => useMediaQuery('(min-width: 1024px)')
+// Tailwind v4 の `lg` は 64rem（＝ブラウザ既定フォント基準の rem）。px 固定にすると
+// ユーザーがブラウザのフォントサイズを変えたとき CSS(lg) と JS 判定がズレて、PC/モバイル
+// のレイアウトが混在する。メディアクエリの rem もフォント基準なので lg と常に一致する。
+/** Tailwind の `lg`（64rem）以上か。ブレークポイント定数を1箇所に集約する。 */
+export const useIsDesktop = () => useMediaQuery('(min-width: 64rem)')

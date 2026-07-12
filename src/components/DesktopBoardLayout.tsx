@@ -21,16 +21,30 @@ export function DesktopBoardLayout() {
   const number = match?.params.number
   const navigate = useNavigate()
 
+  // 閉じたらフォーカスを起点のカードへ戻す。素の aside は Dialog と違いフォーカス管理が
+  // ないため、aside 内の閉じるボタンにフォーカスがあるまま消えると body に落ちてしまう
+  // （キーボード利用者がボード先頭まで Tab し直す羽目になる）。data-task で復帰先を特定。
+  const closePanel = () => {
+    const n = number
+    navigate('/')
+    requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(`[data-task="${n}"]`)?.focus()
+    })
+  }
+
   return (
     <div className="flex h-full min-h-0">
       <div className="min-w-0 flex-1">
         <Board />
       </div>
       {number != null && (
-        <aside className="w-[var(--panel-w)] shrink-0 border-l border-line bg-panel/40">
+        <aside
+          aria-label="タスク詳細"
+          className="w-[var(--panel-w)] shrink-0 border-l border-line bg-panel/40"
+        >
           <Suspense fallback={<FullSpinner label="読み込み中…" />}>
             {/* key={number} で別タスクへ切り替えるたびリマウント＝現行のルート遷移と同じ挙動。 */}
-            <TaskDetail key={number} panel onClose={() => navigate('/')} />
+            <TaskDetail key={number} panel onClose={closePanel} />
           </Suspense>
         </aside>
       )}

@@ -18,28 +18,38 @@ export function CardSkeleton() {
  * Kanban-shaped loading state: real column headers (so the layout doesn't shift
  * when data arrives) + pulsing card placeholders. The pulse stops automatically
  * under prefers-reduced-motion (global rule in index.css).
+ *
+ * 実ボードとレイアウトを厳密に合わせてロード完了時のガタつきを防ぐ:
+ * 列幅式・列レーンの色分け(.col-lane)・ヘッダー行高さ(min-h-8+カウントpill)・
+ * フィルタチップ行高さ・完了表示ON時の5列目まで一致させる。
  */
-export function BoardSkeleton() {
+export function BoardSkeleton({ showClosed = false }: { showClosed?: boolean }) {
+  const cols = [
+    ...ACTIVE_STATUSES.map((s) => ({ key: s as string, accent: STATUS_META[s].dot })),
+    ...(showClosed ? [{ key: '__completed__', accent: STATUS_META.Done.dot }] : []),
+  ]
   return (
     <div className="flex h-full flex-col overflow-hidden" aria-hidden>
       <div className="shrink-0 px-4 pt-4">
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 pb-1">
           {[48, 64, 52, 44].map((w, i) => (
-            <div key={i} className="h-7 rounded-full bg-panel2" style={{ width: w }} />
+            <div key={i} className="h-8 rounded-full bg-panel2" style={{ width: w }} />
           ))}
         </div>
       </div>
-      <div className="flex min-h-0 flex-1 animate-pulse gap-3 overflow-hidden px-4 pt-3">
-        {ACTIVE_STATUSES.map((s, ci) => (
-          <section key={s} className="flex h-full w-[52vw] max-w-[13rem] shrink-0 flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1">
-            <div className="mb-2 flex items-center gap-2 px-1">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ background: STATUS_META[s].dot }}
-              />
-              <span className="text-sm font-bold text-ink">{STATUS_META[s].label}</span>
+      <div className="flex min-h-0 flex-1 animate-pulse gap-3 overflow-hidden px-4 pt-3 lg:px-6">
+        {cols.map((c, ci) => (
+          <section
+            key={c.key}
+            className="flex h-full w-[52vw] max-w-[13rem] shrink-0 flex-col lg:w-0 lg:min-w-[11rem] lg:max-w-none lg:flex-1"
+            style={{ '--col-accent': c.accent } as React.CSSProperties}
+          >
+            <div className="mb-2 flex min-h-8 items-center gap-2 px-1">
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: c.accent }} />
+              <span className="h-3.5 w-16 rounded bg-panel2" />
+              <span className="h-4 w-6 rounded-full bg-panel2" />
             </div>
-            <div className="min-h-0 flex-1 space-y-2 rounded-2xl bg-panel2/30 p-2">
+            <div className="col-lane min-h-0 flex-1 space-y-2 rounded-2xl p-2">
               {Array.from({ length: ci % 2 === 0 ? 3 : 2 }).map((_, i) => (
                 <CardSkeleton key={i} />
               ))}
