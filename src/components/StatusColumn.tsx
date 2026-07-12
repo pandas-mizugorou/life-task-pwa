@@ -56,7 +56,7 @@ export function StatusColumn({
   return (
     <section
       aria-labelledby={headingId}
-      className="flex h-full w-[72vw] max-w-[16rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1"
+      className="flex h-full w-[52vw] max-w-[13rem] shrink-0 snap-start flex-col lg:w-0 lg:min-w-0 lg:max-w-none lg:flex-1"
     >
       <div className="mb-2 flex items-center gap-2 px-1">
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.dot }} aria-hidden />
