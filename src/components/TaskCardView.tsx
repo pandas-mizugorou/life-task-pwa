@@ -76,14 +76,14 @@ export const TaskCardView = forwardRef<HTMLDivElement, Props>(function TaskCardV
                 onLabelTap(task)
               }}
               onPointerDown={(e) => e.stopPropagation()}
-              className="relative inline-flex items-center rounded-full border border-line px-2 py-1 text-sub transition before:absolute before:-inset-2 before:content-[''] hover:border-accent/60 hover:text-ink"
+              className="relative inline-flex items-center rounded-full border border-line p-1 text-sub transition before:absolute before:-inset-2 before:content-[''] hover:border-accent/60 hover:text-ink"
               aria-label="ラベルを付ける"
             >
               <Tag className="h-3.5 w-3.5" />
             </button>
           )}
           {task.labels.slice(0, MAX_LABELS).map((l) => (
-            <LabelChip key={l.name} label={l} />
+            <LabelChip key={l.name} label={l} compact />
           ))}
           {hiddenLabels > 0 && (
             <span
