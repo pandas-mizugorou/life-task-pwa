@@ -14,6 +14,9 @@
 name = "life-task-api"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
+# @block65/webcrypto-web-push の buildPushPayload が Buffer 等の Node API に触れるため必須
+# （未設定だと実購読への送信時に実行時例外。0購読では顕在化しない）。
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # Comma-separated allowlist of PWA origins for CORS (REQUIRED for browser access).
