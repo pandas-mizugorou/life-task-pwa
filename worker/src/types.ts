@@ -22,4 +22,25 @@ export interface Env {
    * /api/upload returns 501 when it's absent.
    */
   WORKER_PUBLIC_URL?: string
+
+  // ---- Web Push (notify-hub / N-13) — all optional so existing deploys keep working ----
+  /**
+   * KV namespace holding one entry per active Web Push subscription (key `sub:<hash>`).
+   * Absent => push subscribe/send return 503. Create with:
+   *   wrangler kv namespace create PUSH_SUBS --config worker/wrangler.toml
+   */
+  PUSH_SUBS?: KVNamespace
+  /**
+   * Shared key the PC bridge (Notify-Phone.ps1) sends as X-Notify-Key to POST
+   * /api/push/send. Separate from APP_PASSPHRASE so the "send a notification"
+   * capability can be rotated independently of the full task API. Set via
+   * `wrangler secret put NOTIFY_KEY`. Absent => /api/push/send returns 401.
+   */
+  NOTIFY_KEY?: string
+  /** VAPID `mailto:` subject. Set as a [vars] entry in wrangler.toml. */
+  VAPID_SUBJECT?: string
+  /** VAPID public key (base64url). Handed to the PWA for PushManager.subscribe. Set via `wrangler secret put`. */
+  VAPID_PUBLIC_KEY?: string
+  /** VAPID private key (base64url). Signs push requests. Set via `wrangler secret put`. */
+  VAPID_PRIVATE_KEY?: string
 }

@@ -4,9 +4,19 @@
 # Deploy:  npm run deploy:worker   (or: wrangler deploy --config worker/wrangler.toml)
 # Secrets: wrangler secret put GITHUB_PAT     --config worker/wrangler.toml
 #          wrangler secret put APP_PASSPHRASE --config worker/wrangler.toml
+#
+# notify-hub (N-13) additionally needs — see docs/notify-hub-setup.md:
+#   wrangler kv namespace create PUSH_SUBS --config worker/wrangler.toml   # paste id into [[kv_namespaces]] below
+#   npx web-push generate-vapid-keys                                       # generate a NEW pair (do NOT reuse family-assets')
+#   wrangler secret put NOTIFY_KEY         --config worker/wrangler.toml   # PC-bridge send key
+#   wrangler secret put VAPID_PUBLIC_KEY   --config worker/wrangler.toml
+#   wrangler secret put VAPID_PRIVATE_KEY  --config worker/wrangler.toml
 name = "life-task-api"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"
+# @block65/webcrypto-web-push の buildPushPayload が Buffer 等の Node API に触れるため必須
+# （未設定だと実購読への送信時に実行時例外。0購読では顕在化しない）。
+compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # Comma-separated allowlist of PWA origins for CORS (REQUIRED for browser access).
@@ -23,6 +33,18 @@ ALLOWED_ORIGIN = "https://life-task-pwa.pages.dev"
 # (GitHub meters only Git LFS, which we don't use), and the private bytes are
 # served back through the signed proxy — never exposed publicly.
 WORKER_PUBLIC_URL = "https://life-task-api.mizugorou071.workers.dev"
+
+# VAPID subject for Web Push (notify-hub / N-13). Set to a mailto: you control (or
+# an https: URL of this project). The VAPID key PAIR is stored as secrets (not here).
+VAPID_SUBJECT = "mailto:mizugorou071@gmail.com"
+
+# KV namespace holding one entry per active Web Push subscription. The push
+# subscribe/send routes return 503 until this binding exists (older deploys keep
+# working). Create the namespace, then paste its id here:
+#   wrangler kv namespace create PUSH_SUBS --config worker/wrangler.toml
+[[kv_namespaces]]
+binding = "PUSH_SUBS"
+id = "ed04fb1d804d4504a6958f0e068bf839"
 
 # Per-IP brute-force throttle for FAILED passphrase attempts. Uses the Cloudflare
 # Rate Limiting binding (no external resource to create). 20 failures / 60s / IP

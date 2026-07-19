@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ExternalLink, Link2, Lock, ShieldCheck, Tags } from 'lucide-react'
+import { AlertTriangle, Bell, ExternalLink, Link2, Lock, ShieldCheck, Tags } from 'lucide-react'
 import { Card, CardTitle } from '../components/ui/Card'
 import { Input, Label } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
@@ -9,6 +9,7 @@ import { useToast } from '../components/ui/Toast'
 import { useAuth } from '../context/AuthContext'
 import { useBoard } from '../context/BoardContext'
 import * as api from '../lib/api'
+import { disablePush, enablePush, isSubscribed, pushSupported } from '../lib/push'
 
 export function Settings({ firstRun = false }: { firstRun?: boolean }) {
   const { workerUrl, saveWorkerUrl, signOut } = useAuth()
@@ -70,6 +71,7 @@ export function Settings({ firstRun = false }: { firstRun?: boolean }) {
 
       <DriftWarning />
       <ShowClosedToggle />
+      <PushToggle />
 
       <Card>
         <CardTitle>
@@ -218,6 +220,77 @@ function ShowClosedToggle() {
           checked={board.showClosed}
           onCheckedChange={board.setShowClosed}
           aria-label="完了したタスクも表示"
+        />
+      </div>
+    </Card>
+  )
+}
+
+/** Opt in to Web Push so PC automations (Run-Skill failures etc.) reach this phone. */
+function PushToggle() {
+  const toast = useToast()
+  const supported = pushSupported()
+  const [on, setOn] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    isSubscribed()
+      .then((v) => alive && setOn(v))
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const toggle = async (next: boolean) => {
+    setBusy(true)
+    try {
+      if (next) {
+        await enablePush()
+        setOn(true)
+        toast({ variant: 'success', title: '通知をオンにしました' })
+      } else {
+        await disablePush()
+        setOn(false)
+        toast({ variant: 'success', title: '通知をオフにしました' })
+      }
+    } catch (e) {
+      setOn(await isSubscribed().catch(() => false))
+      toast({ variant: 'error', title: e instanceof Error ? e.message : '通知の設定に失敗しました' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardTitle>
+        <span className="inline-flex items-center gap-2">
+          <Bell className="h-4 w-4 text-accent" />
+          PC自動化の通知
+        </span>
+      </CardTitle>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-ink">この端末で通知を受け取る</div>
+          <div className="mt-0.5 text-xs leading-relaxed text-sub">
+            PC の自動処理（定期ジョブの失敗やバッチ完了）を、この iPhone に Web Push で通知します。
+            {!supported && (
+              <>
+                <br />
+                <span className="text-warn">
+                  この端末では利用できません。ホーム画面に追加した状態で開いてください。
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+        <Switch
+          checked={on}
+          onCheckedChange={toggle}
+          disabled={!supported || busy}
+          aria-label="PC自動化の通知を受け取る"
         />
       </div>
     </Card>

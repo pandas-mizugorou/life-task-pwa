@@ -17,6 +17,44 @@ describe('GET /api/health', () => {
   })
 })
 
+describe('POST /api/push/send auth', () => {
+  const body = JSON.stringify({ title: 't', body: 'b' })
+  it('401s when NOTIFY_KEY is unset (no key configured)', async () => {
+    const res = await worker.fetch(
+      new Request('https://x/api/push/send', { method: 'POST', body }),
+      {} as Env,
+      ctx,
+    )
+    expect(res.status).toBe(401)
+  })
+  it('401s when X-Notify-Key does not match', async () => {
+    const res = await worker.fetch(
+      new Request('https://x/api/push/send', {
+        method: 'POST',
+        headers: { 'X-Notify-Key': 'wrong' },
+        body,
+      }),
+      { NOTIFY_KEY: 'right' } as Env,
+      ctx,
+    )
+    expect(res.status).toBe(401)
+  })
+  it('does not require the X-App-Key passphrase (separate gate)', async () => {
+    // With the correct notify key but no PUSH_SUBS binding, it passes auth and
+    // fails at send with 503 — proving the app-key gate was not what blocked it.
+    const res = await worker.fetch(
+      new Request('https://x/api/push/send', {
+        method: 'POST',
+        headers: { 'X-Notify-Key': 'right' },
+        body,
+      }),
+      { NOTIFY_KEY: 'right' } as Env,
+      ctx,
+    )
+    expect(res.status).toBe(503)
+  })
+})
+
 describe('TASK_PATH_RE', () => {
   it('matches a bare task path', () => {
     const m = '/api/tasks/123'.match(TASK_PATH_RE)

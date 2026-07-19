@@ -38,6 +38,10 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Layer the Web Push handlers (public/push-sw.js) onto the generated SW.
+        // Kept as a separate importScripts file so the Workbox precache SW is
+        // otherwise untouched. Served from the site root as /push-sw.js.
+        importScripts: ['push-sw.js'],
         // Precache built static assets only. The GitHub data lives behind the
         // Cloudflare Worker on a different origin and is intentionally NOT cached
         // => network-only, so the board is never served stale.

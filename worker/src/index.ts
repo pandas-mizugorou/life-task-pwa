@@ -4,6 +4,7 @@
 import type { Env } from './types'
 import * as github from './github'
 import { ApiError, STATUS_ORDER } from './github'
+import * as push from './push'
 
 /** Routes for /api/tasks/:number and its sub-resources (exported for tests). */
 export const TASK_PATH_RE =
@@ -51,6 +52,37 @@ export default {
         if (status >= 500) {
           const detail = isApi ? e.detail : e instanceof Error ? `${e.message}\n${e.stack ?? ''}` : String(e)
           console.error(`[life-task-api] GET ${url.pathname} -> ${status}: ${message}` + (detail ? ` :: ${detail}` : ''))
+        }
+        return json({ error: message }, status, cors)
+      }
+    }
+
+    // Push send — served BEFORE the X-App-Key gate because its caller is the PC
+    // bridge (Notify-Phone.ps1), not the PWA. It authenticates with its own
+    // X-Notify-Key (NOTIFY_KEY secret) so the "send a notification" capability is
+    // scoped separately from the full task API passphrase.
+    if (url.pathname === '/api/push/send' && request.method === 'POST') {
+      const notifyKey = request.headers.get('X-Notify-Key') ?? ''
+      if (!env.NOTIFY_KEY || !(await timingSafeEqual(notifyKey, env.NOTIFY_KEY))) {
+        if (env.RATE_LIMITER) {
+          const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+          const { success } = await env.RATE_LIMITER.limit({ key: `notify:${ip}` })
+          if (!success) return json({ error: '試行回数が多すぎます' }, 429, cors)
+        }
+        return json({ error: '認証に失敗しました' }, 401, cors)
+      }
+      try {
+        const message = push.parseSendBody(await request.json())
+        const result = await push.sendToAll(env, message)
+        return json(result, 200, cors)
+      } catch (e) {
+        if (e instanceof SyntaxError) return json({ error: 'リクエスト形式が正しくありません' }, 400, cors)
+        const isApi = e instanceof ApiError
+        const status = isApi ? e.status : 500
+        const message = isApi ? e.message : 'サーバーエラーが発生しました'
+        if (status >= 500) {
+          const detail = isApi ? e.detail : e instanceof Error ? `${e.message}\n${e.stack ?? ''}` : String(e)
+          console.error(`[life-task-api] POST /api/push/send -> ${status}: ${message}` + (detail ? ` :: ${detail}` : ''))
         }
         return json({ error: message }, status, cors)
       }
@@ -130,6 +162,19 @@ async function route(request: Request, env: Env, url: URL): Promise<unknown> {
   const m = request.method
 
   if (p === '/api/meta' && m === 'GET') return github.getMeta(env)
+
+  // ---- Web Push (notify-hub) — subscribe/unsubscribe run behind the X-App-Key gate
+  //      (the PWA is authenticated); /api/push/send has its own gate above. ----
+  if (p === '/api/push/vapid-public-key' && m === 'GET') {
+    if (!env.VAPID_PUBLIC_KEY) throw new ApiError('VAPID 鍵が未設定です', 503)
+    return { key: env.VAPID_PUBLIC_KEY }
+  }
+  if (p === '/api/push/subscribe' && m === 'POST') {
+    return push.subscribe(env, await request.json())
+  }
+  if (p === '/api/push/unsubscribe' && m === 'POST') {
+    return push.unsubscribe(env, await request.json())
+  }
 
   if (p === '/api/board' && m === 'GET') {
     const includeClosed = url.searchParams.get('include') === 'closed'
@@ -222,7 +267,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   const allowed = (env.ALLOWED_ORIGIN ?? '').split(',').map((s) => s.trim()).filter(Boolean)
   const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-App-Key',
+    'Access-Control-Allow-Headers': 'Content-Type, X-App-Key, X-Notify-Key',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   }
