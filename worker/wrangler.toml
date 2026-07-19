@@ -33,7 +33,7 @@ WORKER_PUBLIC_URL = "https://life-task-api.mizugorou071.workers.dev"
 
 # VAPID subject for Web Push (notify-hub / N-13). Set to a mailto: you control (or
 # an https: URL of this project). The VAPID key PAIR is stored as secrets (not here).
-VAPID_SUBJECT = "REPLACE_WITH_mailto:you@example.com"
+VAPID_SUBJECT = "mailto:mizugorou071@gmail.com"
 
 # KV namespace holding one entry per active Web Push subscription. The push
 # subscribe/send routes return 503 until this binding exists (older deploys keep
@@ -41,7 +41,7 @@ VAPID_SUBJECT = "REPLACE_WITH_mailto:you@example.com"
 #   wrangler kv namespace create PUSH_SUBS --config worker/wrangler.toml
 [[kv_namespaces]]
 binding = "PUSH_SUBS"
-id = "REPLACE_WITH_KV_ID"
+id = "ed04fb1d804d4504a6958f0e068bf839"
 
 # Per-IP brute-force throttle for FAILED passphrase attempts. Uses the Cloudflare
 # Rate Limiting binding (no external resource to create). 20 failures / 60s / IP
