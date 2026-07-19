@@ -163,6 +163,15 @@ export const reorderTask = (n: number, itemId: string, afterItemId: string | nul
     body: JSON.stringify({ itemId, afterItemId }),
   })
 
+// ---- web push (notify-hub / N-13) ----
+export const getVapidPublicKey = () => call<{ key: string }>('/api/push/vapid-public-key')
+
+export const subscribePush = (sub: PushSubscriptionJSON) =>
+  call<{ ok: true }>('/api/push/subscribe', { method: 'POST', body: JSON.stringify(sub) })
+
+export const unsubscribePush = (endpoint: string) =>
+  call<{ ok: true }>('/api/push/unsubscribe', { method: 'POST', body: JSON.stringify({ endpoint }) })
+
 // ---- labels ----
 export const getLabels = () => call<{ labels: Label[] }>('/api/labels')
 
