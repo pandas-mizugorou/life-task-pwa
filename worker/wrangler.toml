@@ -11,6 +11,10 @@
 #   wrangler secret put NOTIFY_KEY         --config worker/wrangler.toml   # PC-bridge send key
 #   wrangler secret put VAPID_PUBLIC_KEY   --config worker/wrangler.toml
 #   wrangler secret put VAPID_PRIVATE_KEY  --config worker/wrangler.toml
+#
+# quick-capture (N-11) — optional; only the iOS Shortcut path needs it:
+#   wrangler secret put CAPTURE_TOKEN      --config worker/wrangler.toml   # capture-only token
+#   (the authenticated PWA calls /api/capture with X-App-Key; the Shortcut uses this token)
 name = "life-task-api"
 main = "src/index.ts"
 compatibility_date = "2024-11-01"

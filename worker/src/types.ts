@@ -43,4 +43,14 @@ export interface Env {
   VAPID_PUBLIC_KEY?: string
   /** VAPID private key (base64url). Signs push requests. Set via `wrangler secret put`. */
   VAPID_PRIVATE_KEY?: string
+
+  // ---- quick-capture (N-11) — optional so existing deploys keep working ----
+  /**
+   * Capture-only token for POST /api/capture, sent as X-Capture-Token. Lets a device
+   * (iOS Shortcut) file an inbox fragment WITHOUT holding the full APP_PASSPHRASE, so a
+   * leaked shortcut token only enables capture (revoke by rotating this one secret) and
+   * never the task API or the PAT. Set via `wrangler secret put CAPTURE_TOKEN`. Absent =>
+   * only X-App-Key (the authenticated PWA) may call /api/capture.
+   */
+  CAPTURE_TOKEN?: string
 }

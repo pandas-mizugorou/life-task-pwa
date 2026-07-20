@@ -88,6 +88,42 @@ export default {
       }
     }
 
+    // Quick-capture (N-11) — served BEFORE the X-App-Key gate so an iOS Shortcut can
+    // file an inbox fragment with a capture-ONLY token (X-Capture-Token / CAPTURE_TOKEN)
+    // instead of the full passphrase. The authenticated PWA may also call it with its
+    // X-App-Key. Either valid credential passes; neither => 401 (throttled per IP).
+    if (url.pathname === '/api/capture' && request.method === 'POST') {
+      const appKey = request.headers.get('X-App-Key') ?? ''
+      const capKey = request.headers.get('X-Capture-Token') ?? ''
+      const okApp = !!env.APP_PASSPHRASE && (await timingSafeEqual(appKey, env.APP_PASSPHRASE))
+      const okCap = !!env.CAPTURE_TOKEN && (await timingSafeEqual(capKey, env.CAPTURE_TOKEN))
+      if (!okApp && !okCap) {
+        if (env.RATE_LIMITER) {
+          const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+          const { success } = await env.RATE_LIMITER.limit({ key: `capture:${ip}` })
+          if (!success) return json({ error: '試行回数が多すぎます' }, 429, cors)
+        }
+        return json({ error: '認証に失敗しました' }, 401, cors)
+      }
+      // Small-body guard (title<=200 / body<=5000 chars are all createInboxCapture needs).
+      const capLen = Number(request.headers.get('Content-Length') ?? '0')
+      if (capLen > 16 * 1024) return json({ error: 'リクエストが大きすぎます' }, 413, cors)
+      try {
+        const result = await github.createInboxCapture(env, await request.json())
+        return json(result, 200, cors)
+      } catch (e) {
+        if (e instanceof SyntaxError) return json({ error: 'リクエスト形式が正しくありません' }, 400, cors)
+        const isApi = e instanceof ApiError
+        const status = isApi ? e.status : 500
+        const message = isApi ? e.message : 'サーバーエラーが発生しました'
+        if (status >= 500) {
+          const detail = isApi ? e.detail : e instanceof Error ? `${e.message}\n${e.stack ?? ''}` : String(e)
+          console.error(`[life-task-api] POST /api/capture -> ${status}: ${message}` + (detail ? ` :: ${detail}` : ''))
+        }
+        return json({ error: message }, status, cors)
+      }
+    }
+
     // ---- auth: constant-time passphrase check, with per-IP throttling of failures ----
     const key = request.headers.get('X-App-Key') ?? ''
     if (!env.APP_PASSPHRASE || !(await timingSafeEqual(key, env.APP_PASSPHRASE))) {
@@ -267,7 +303,7 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   const allowed = (env.ALLOWED_ORIGIN ?? '').split(',').map((s) => s.trim()).filter(Boolean)
   const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, X-App-Key, X-Notify-Key',
+    'Access-Control-Allow-Headers': 'Content-Type, X-App-Key, X-Notify-Key, X-Capture-Token',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   }
