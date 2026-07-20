@@ -371,6 +371,57 @@ export async function createTask(
   }
 }
 
+// ---- quick-capture (N-11) ---------------------------------------------------
+/** The one label that marks a fragment for later triage. inbox issues are
+ *  deliberately NOT added to the Project board (Status is assigned at triage). */
+export const INBOX_LABEL = 'inbox'
+
+/** Idempotently ensure the `inbox` label exists so createInboxCapture can apply it.
+ *  A 422 means it already exists (fine); any other error propagates. */
+async function ensureInboxLabel(env: Env): Promise<void> {
+  try {
+    await ghRest(env, 'POST', `/repos/${OWNER}/${REPO}/labels`, {
+      name: INBOX_LABEL,
+      color: normalizeColor('8b97b8'),
+      description: 'スマホから捕捉した断片。triage 対象・ボード非掲載（quick-capture / N-11）',
+    })
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 422) return // already exists
+    throw e
+  }
+}
+
+/**
+ * Create an inbox capture: a `label:inbox` issue that is NOT added to the Project
+ * board. Fragments are triaged later (inbox-triage skill), where a Status is
+ * assigned if they graduate to real tasks. Validation runs BEFORE any GitHub call,
+ * so bad input fails fast (400) with no network round-trip.
+ */
+export async function createInboxCapture(
+  env: Env,
+  input: { title?: string; body?: string },
+): Promise<{ number: number; url: string }> {
+  const title = (input?.title ?? '').trim()
+  if (!title) throw new ApiError('タイトルを入力してください', 400)
+  if (title.length > 200) throw new ApiError('タイトルが長すぎます（200字まで）', 400)
+  const bodyRaw = typeof input?.body === 'string' ? input.body : ''
+  if (bodyRaw.length > 5000) throw new ApiError('本文が長すぎます（5000字まで）', 400)
+  const body = bodyRaw.trim() || undefined
+
+  await ensureInboxLabel(env)
+
+  // retry:false — POST issue is non-idempotent (a 5xx after GitHub wrote the issue
+  // would duplicate on replay). Labels applied at creation; NO board-add on purpose.
+  const issue = await ghRest(
+    env,
+    'POST',
+    `/repos/${OWNER}/${REPO}/issues`,
+    { title, body, labels: [INBOX_LABEL] },
+    false,
+  )
+  return { number: issue.number, url: issue.html_url }
+}
+
 export async function setStatus(env: Env, number: number, statusInput: unknown): Promise<Task> {
   if (!isStatus(statusInput)) throw new ApiError(`未知のステータス: ${String(statusInput)}`, 400)
   const status = statusInput

@@ -55,6 +55,48 @@ describe('POST /api/push/send auth', () => {
   })
 })
 
+describe('POST /api/capture (quick-capture / N-11)', () => {
+  const cap = (headers: Record<string, string>, body: unknown, env: Partial<Env>) =>
+    worker.fetch(
+      new Request('https://x/api/capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(body),
+      }),
+      env as Env,
+      ctx,
+    )
+
+  it('401s with no credentials', async () => {
+    const res = await cap({}, { title: 't' }, { APP_PASSPHRASE: 'pass', CAPTURE_TOKEN: 'cap' })
+    expect(res.status).toBe(401)
+  })
+  it('401s with a wrong X-Capture-Token', async () => {
+    const res = await cap({ 'X-Capture-Token': 'nope' }, { title: 't' }, { CAPTURE_TOKEN: 'cap' })
+    expect(res.status).toBe(401)
+  })
+  it('401s with a wrong X-App-Key when no CAPTURE_TOKEN is set', async () => {
+    const res = await cap({ 'X-App-Key': 'nope' }, { title: 't' }, { APP_PASSPHRASE: 'pass' })
+    expect(res.status).toBe(401)
+  })
+  it('passes auth via X-Capture-Token, then 400s on empty title (no GitHub call)', async () => {
+    const res = await cap({ 'X-Capture-Token': 'cap' }, { title: '' }, { CAPTURE_TOKEN: 'cap' })
+    expect(res.status).toBe(400)
+  })
+  it('passes auth via X-App-Key, then 400s on empty title (no GitHub call)', async () => {
+    const res = await cap({ 'X-App-Key': 'pass' }, { title: '   ' }, { APP_PASSPHRASE: 'pass' })
+    expect(res.status).toBe(400)
+  })
+  it('400s on an over-long title (validation before network)', async () => {
+    const res = await cap(
+      { 'X-Capture-Token': 'cap' },
+      { title: 'x'.repeat(201) },
+      { CAPTURE_TOKEN: 'cap' },
+    )
+    expect(res.status).toBe(400)
+  })
+})
+
 describe('TASK_PATH_RE', () => {
   it('matches a bare task path', () => {
     const m = '/api/tasks/123'.match(TASK_PATH_RE)
