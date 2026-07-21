@@ -7,6 +7,8 @@ import { sortCompleted } from '../lib/completed'
 import {
   EMPTY_LABEL_FILTER,
   matchesLabelFilter,
+  normalizeLabelFilter,
+  pruneLabelFilter,
   removeLabelFromFilter,
   renameLabelInFilter,
   type LabelFilter,
@@ -14,6 +16,7 @@ import {
 import type { Label, NewTask, Status, Task } from '../lib/types'
 
 const LABEL_ORDER_KEY = 'ltp-label-order'
+const LABEL_FILTER_KEY = 'ltp-label-filter'
 
 function readLabelOrder(): string[] {
   try {
@@ -27,6 +30,23 @@ function readLabelOrder(): string[] {
 
 function writeLabelOrder(names: string[]) {
   localStorage.setItem(LABEL_ORDER_KEY, JSON.stringify(names))
+}
+
+function readLabelFilter(): LabelFilter {
+  try {
+    const raw = localStorage.getItem(LABEL_FILTER_KEY)
+    return raw ? normalizeLabelFilter(JSON.parse(raw)) : EMPTY_LABEL_FILTER
+  } catch {
+    return EMPTY_LABEL_FILTER
+  }
+}
+
+function writeLabelFilter(filter: LabelFilter) {
+  if (filter.labels.length === 0) {
+    localStorage.removeItem(LABEL_FILTER_KEY)
+    return
+  }
+  localStorage.setItem(LABEL_FILTER_KEY, JSON.stringify(filter))
 }
 
 // Apply the user's saved label order. Labels missing from it (e.g. freshly created)
@@ -103,7 +123,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [truncated, setTruncated] = useState(false)
   const [labels, setLabels] = useState<Label[]>([])
-  const [labelFilter, setLabelFilter] = useState<LabelFilter>(EMPTY_LABEL_FILTER)
+  const [labelFilter, setLabelFilter] = useState<LabelFilter>(readLabelFilter)
   const [showClosed, setShowClosedState] = useState<boolean>(
     () => localStorage.getItem('ltp-show-closed') === '1',
   )
@@ -115,6 +135,11 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     if (v) setClosedLoading(true)
     setShowClosedState(v)
   }, [])
+
+  // アプリを閉じても、端末ごとに最後に適用したラベル条件を復元する。
+  useEffect(() => {
+    writeLabelFilter(labelFilter)
+  }, [labelFilter])
 
   // Keep a live ref so optimistic handlers can snapshot/rollback reliably.
   const tasksRef = useRef(tasks)
@@ -323,6 +348,8 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     try {
       const { labels } = await api.getLabels()
       setLabels(sortLabelsByOrder(labels, readLabelOrder()))
+      // 他端末で削除・変更されたラベルは、復元済みの条件から安全に取り除く。
+      setLabelFilter((filter) => pruneLabelFilter(filter, labels.map((label) => label.name)))
     } catch {
       /* labels are non-critical for rendering the board; ignore transient errors */
     }

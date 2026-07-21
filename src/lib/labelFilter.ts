@@ -9,6 +9,16 @@ export interface LabelFilter {
 
 export const EMPTY_LABEL_FILTER: LabelFilter = { mode: 'include', labels: [] }
 
+/** 保存済みの端末状態を検証する。不正なモードや空選択は安全に解除する。 */
+export function normalizeLabelFilter(value: unknown): LabelFilter {
+  if (!value || typeof value !== 'object') return EMPTY_LABEL_FILTER
+  const candidate = value as Partial<LabelFilter>
+  if (candidate.mode !== 'include' && candidate.mode !== 'exclude') return EMPTY_LABEL_FILTER
+  if (!Array.isArray(candidate.labels)) return EMPTY_LABEL_FILTER
+  const labels = [...new Set(candidate.labels.filter((label): label is string => typeof label === 'string'))]
+  return labels.length > 0 ? { mode: candidate.mode, labels } : EMPTY_LABEL_FILTER
+}
+
 export function hasActiveLabelFilter(filter: LabelFilter): boolean {
   return filter.labels.length > 0
 }
@@ -33,13 +43,22 @@ export function renameLabelInFilter(
   newName: string,
 ): LabelFilter {
   if (!filter.labels.includes(oldName) || oldName === newName) return filter
-  return {
+  return normalizeLabelFilter({
     ...filter,
     labels: filter.labels.map((name) => (name === oldName ? newName : name)),
-  }
+  })
 }
 
 export function removeLabelFromFilter(filter: LabelFilter, name: string): LabelFilter {
   if (!filter.labels.includes(name)) return filter
-  return { ...filter, labels: filter.labels.filter((label) => label !== name) }
+  return normalizeLabelFilter({ ...filter, labels: filter.labels.filter((label) => label !== name) })
+}
+
+/** 再起動中または他端末でGitHubから消えたラベルを、復元した条件から外す。 */
+export function pruneLabelFilter(filter: LabelFilter, availableNames: Iterable<string>): LabelFilter {
+  const available = new Set(availableNames)
+  return normalizeLabelFilter({
+    ...filter,
+    labels: filter.labels.filter((name) => available.has(name)),
+  })
 }
