@@ -31,11 +31,7 @@ export function BoardSkeleton({ showClosed = false }: { showClosed?: boolean }) 
   return (
     <div className="flex h-full flex-col overflow-hidden" aria-hidden>
       <div className="shrink-0 px-4 pt-4">
-        <div className="flex gap-1.5 pb-1">
-          {[48, 64, 52, 44].map((w, i) => (
-            <div key={i} className="h-8 rounded-full bg-panel2" style={{ width: w }} />
-          ))}
-        </div>
+        <div className="h-10 w-36 rounded-full bg-panel2" />
       </div>
       <div className="flex min-h-0 flex-1 animate-pulse gap-3 overflow-hidden px-4 pt-3 lg:px-6">
         {cols.map((c, ci) => (

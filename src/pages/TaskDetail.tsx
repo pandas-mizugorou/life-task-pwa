@@ -17,7 +17,7 @@ import { Input, Label, Textarea } from '../components/ui/Input'
 import { Spinner } from '../components/ui/Spinner'
 import { EmptyState, ErrorState } from '../components/ui/States'
 import { TaskDetailSkeleton } from '../components/Skeletons'
-import { LabelToggleChips } from '../components/LabelToggleChips'
+import { CollapsibleLabelPicker } from '../components/LabelPicker'
 import { CommentList } from '../components/CommentList'
 import { Markdown } from '../components/Markdown'
 import { ImageLightbox } from '../components/ImageLightbox'
@@ -507,7 +507,7 @@ export function TaskDetail({
             )}
             <div className="mt-4 border-t border-line/60 pt-3">
               <div className="mb-2 text-[13px] font-semibold text-sub">ラベル</div>
-              <LabelToggleChips
+              <CollapsibleLabelPicker
                 selected={task.labels.map((l) => l.name)}
                 onToggle={toggleLabel}
                 labels={board.labels}

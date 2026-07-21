@@ -4,6 +4,13 @@ import * as api from '../lib/api'
 import { errMsg, haptic } from '../lib/haptics'
 import { ACTIVE_STATUSES, STATUS_ORDER } from '../lib/status'
 import { sortCompleted } from '../lib/completed'
+import {
+  EMPTY_LABEL_FILTER,
+  matchesLabelFilter,
+  removeLabelFromFilter,
+  renameLabelInFilter,
+  type LabelFilter,
+} from '../lib/labelFilter'
 import type { Label, NewTask, Status, Task } from '../lib/types'
 
 const LABEL_ORDER_KEY = 'ltp-label-order'
@@ -43,8 +50,8 @@ interface BoardValue {
   total: number
   /** True when the board hit the server-side page cap (not all items loaded). */
   truncated: boolean
-  labelFilter: string | null
-  setLabelFilter: (v: string | null) => void
+  labelFilter: LabelFilter
+  setLabelFilter: (v: LabelFilter) => void
   showClosed: boolean
   setShowClosed: (v: boolean) => void
   /** True while the first fetch after enabling 完了表示 is in flight (closed column loading). */
@@ -96,7 +103,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasks] = useState<Task[]>([])
   const [truncated, setTruncated] = useState(false)
   const [labels, setLabels] = useState<Label[]>([])
-  const [labelFilter, setLabelFilter] = useState<string | null>(null)
+  const [labelFilter, setLabelFilter] = useState<LabelFilter>(EMPTY_LABEL_FILTER)
   const [showClosed, setShowClosedState] = useState<boolean>(
     () => localStorage.getItem('ltp-show-closed') === '1',
   )
@@ -343,11 +350,11 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
           order[idx] = patch.newName
           writeLabelOrder(order)
         }
-        if (labelFilter === name) setLabelFilter(patch.newName)
+        setLabelFilter((filter) => renameLabelInFilter(filter, name, patch.newName!))
       }
       await Promise.all([refreshLabels(), refresh()]) // names/colors are embedded in tasks
     },
-    [refreshLabels, refresh, labelFilter],
+    [refreshLabels, refresh],
   )
 
   const deleteLabel = useCallback(
@@ -355,10 +362,10 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
       await api.deleteLabel(name)
       const order = readLabelOrder()
       if (order.includes(name)) writeLabelOrder(order.filter((n) => n !== name)) // prune stale entry
-      if (labelFilter === name) setLabelFilter(null)
+      setLabelFilter((filter) => removeLabelFromFilter(filter, name))
       await Promise.all([refreshLabels(), refresh()])
     },
-    [refreshLabels, refresh, labelFilter],
+    [refreshLabels, refresh],
   )
 
   const reorderLabels = useCallback((names: string[]) => {
@@ -374,7 +381,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
     >
     for (const t of tasks) {
       if (t.state === 'CLOSED') continue // closed = completed → shown in 完了済み column, not here
-      if (labelFilter && !t.labels.some((l) => l.name === labelFilter)) continue
+      if (!matchesLabelFilter(t.labels, labelFilter)) continue
       const inActive = ACTIVE_STATUSES.includes(t.status)
       const col: Status = inActive ? t.status : 'Todo' // open+Done/unknown → Todo
       // Normalize the card's status to its display column, so the pill matches the
@@ -391,7 +398,7 @@ export function BoardProvider({ children }: { children: React.ReactNode }) {
       sortCompleted(
         tasks.filter(
           (t) =>
-            t.state === 'CLOSED' && (!labelFilter || t.labels.some((l) => l.name === labelFilter)),
+            t.state === 'CLOSED' && matchesLabelFilter(t.labels, labelFilter),
         ),
       ),
     [tasks, labelFilter],

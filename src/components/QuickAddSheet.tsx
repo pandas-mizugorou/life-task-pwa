@@ -5,7 +5,7 @@ import { Input, Label } from './ui/Input'
 import { Select } from './ui/Select'
 import { Button } from './ui/Button'
 import { Spinner } from './ui/Spinner'
-import { LabelToggleChips } from './LabelToggleChips'
+import { CollapsibleLabelPicker } from './LabelPicker'
 import { useToast } from './ui/Toast'
 import { useBoard } from '../context/BoardContext'
 import { ACTIVE_STATUSES, STATUS_META } from '../lib/status'
@@ -82,7 +82,12 @@ export function QuickAddSheet({
           </div>
           <div>
             <Label>ラベル（任意・複数可）</Label>
-            <LabelToggleChips selected={labels} onToggle={toggleLabel} labels={board.labels} />
+            <CollapsibleLabelPicker
+              key={open ? 'quick-add-open' : 'quick-add-closed'}
+              selected={labels}
+              onToggle={toggleLabel}
+              labels={board.labels}
+            />
           </div>
           <div>
             <Label htmlFor="qa-status">ステータス</Label>

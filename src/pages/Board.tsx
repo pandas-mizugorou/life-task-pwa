@@ -20,7 +20,7 @@ import { useBoard } from '../context/BoardContext'
 import { BoardSkeleton } from '../components/Skeletons'
 import { Button } from '../components/ui/Button'
 import { EmptyState, ErrorState } from '../components/ui/States'
-import { LabelFilterChips } from '../components/LabelFilterChips'
+import { LabelFilterControl } from '../components/LabelFilterControl'
 import { StatusColumn } from '../components/StatusColumn'
 import { CompletedColumn } from '../components/CompletedColumn'
 import { QuickAddSheet } from '../components/QuickAddSheet'
@@ -32,6 +32,7 @@ import { boardScroll } from '../lib/boardScroll'
 import { usePullToRefresh } from '../lib/usePullToRefresh'
 import { useIsDesktop } from '../lib/useMediaQuery'
 import { ACTIVE_STATUSES, STATUS_META } from '../lib/status'
+import { EMPTY_LABEL_FILTER, hasActiveLabelFilter } from '../lib/labelFilter'
 import type { Status, Task } from '../lib/types'
 
 // Prefer what's directly under the finger (precise); fall back to the nearest
@@ -98,6 +99,8 @@ export function Board() {
     return <BoardSkeleton showClosed={board.showClosed} />
   if (board.error && board.tasks.length === 0)
     return <ErrorState message={board.error} onRetry={board.refresh} />
+
+  const filterActive = hasActiveLabelFilter(board.labelFilter)
 
   const onDragStart = (e: DragStartEvent) => {
     const t = e.active.data.current?.task as Task | undefined
@@ -268,7 +271,7 @@ export function Board() {
           }}
         >
           <div className="shrink-0 px-4 pt-4">
-            <LabelFilterChips
+            <LabelFilterControl
               value={board.labelFilter}
               onChange={board.setLabelFilter}
               labels={board.labels}
@@ -287,14 +290,21 @@ export function Board() {
           !(board.showClosed && board.completed.length > 0) &&
           !board.closedLoading ? (
             <div className="flex min-h-0 flex-1 items-center justify-center px-6">
-              {board.labelFilter ? (
+              {filterActive ? (
                 <EmptyState
                   icon="🏷️"
-                  title="このラベルのタスクはありません"
-                  description="別のラベルを選ぶか、フィルタを解除してください。"
+                  title={
+                    board.labelFilter.mode === 'include'
+                      ? '選択したラベルのタスクはありません'
+                      : '除外後に表示できるタスクはありません'
+                  }
+                  description="条件を変更するか、絞り込みを解除してください。"
                   action={
-                    <Button variant="secondary" onClick={() => board.setLabelFilter(null)}>
-                      フィルタを解除
+                    <Button
+                      variant="secondary"
+                      onClick={() => board.setLabelFilter(EMPTY_LABEL_FILTER)}
+                    >
+                      絞り込みを解除
                     </Button>
                   }
                 />
